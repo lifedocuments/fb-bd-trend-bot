@@ -19,7 +19,7 @@ function pickProvider() {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function callGeminiModel({ model, apiKey, system, user, maxTokens }) {
+async function callGeminiModel({ model, apiKey, system, user, maxTokens, json }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   // Cut off a request that hangs (Google overloaded) instead of waiting for
   // Node's 5-minute default, so the retry/fallback below gets a chance.
@@ -37,7 +37,11 @@ async function callGeminiModel({ model, apiKey, system, user, maxTokens }) {
         contents: [{ role: 'user', parts: [{ text: user }] }],
         // Newer Flash models may "think" before answering, which uses output
         // tokens too — so allow generous headroom even for a short caption.
-        generationConfig: { maxOutputTokens: Math.max(maxTokens * 4, 2048), temperature: 0.9 }
+        generationConfig: {
+          maxOutputTokens: Math.max(maxTokens * 4, 2048),
+          temperature: 0.9,
+          ...(json ? { responseMimeType: 'application/json' } : {})
+        }
       })
     });
   } catch (netErr) {
@@ -78,7 +82,7 @@ async function callGeminiModel({ model, apiKey, system, user, maxTokens }) {
   return text;
 }
 
-async function callGemini({ system, user, maxTokens }) {
+async function callGemini({ system, user, maxTokens, json }) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');
   // "gemini-flash-latest" is Google's alias for the current Flash model, so
@@ -93,7 +97,7 @@ async function callGemini({ system, user, maxTokens }) {
   let lastErr;
   for (let i = 0; i < attempts.length; i++) {
     try {
-      return await callGeminiModel({ model: attempts[i], apiKey, system, user, maxTokens });
+      return await callGeminiModel({ model: attempts[i], apiKey, system, user, maxTokens, json });
     } catch (err) {
       lastErr = err;
       if (!err.retryable || i === attempts.length - 1) throw err;
@@ -135,11 +139,11 @@ async function callClaude({ system, user, maxTokens }) {
   return text;
 }
 
-async function callLLM({ system, user, maxTokens = 600 }) {
+async function callLLM({ system, user, maxTokens = 600, json = false }) {
   const provider = pickProvider();
   console.log(`[ai] Using provider: ${provider}`);
   return provider === 'gemini'
-    ? callGemini({ system, user, maxTokens })
+    ? callGemini({ system, user, maxTokens, json })
     : callClaude({ system, user, maxTokens });
 }
 
@@ -149,24 +153,63 @@ const LANGUAGE_INSTRUCTIONS = {
   banglish: 'Write in "Banglish" — Bangla sentence structure using Latin letters, the way many Bangladeshi Facebook pages post — mixing in English words naturally.'
 };
 
-const SAFETY_SYSTEM_NOTE = `If the topic you are given is about a death, disaster, accident, crime, violence, war, or political unrest, do not write a cheerful or celebratory post about it — instead respond with exactly: ${SKIP}`;
+function todayInDhaka() {
+  return new Date().toLocaleDateString('en-GB', {
+    timeZone: 'Asia/Dhaka', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+}
 
-export async function writeTrendCaption({ trend, language = 'bn', pageName }) {
+function parseJsonReply(text) {
+  const cleaned = text.replace(/```(?:json)?/gi, '').trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start === -1 || end <= start) throw new Error('AI reply was not JSON.');
+  return JSON.parse(cleaned.slice(start, end + 1));
+}
+
+// Decides whether a trend suits the Page, and if so writes the post and an
+// image search phrase — all in one AI call to stay well inside free limits.
+// Returns { skip: true, reason } or { skip: false, caption, imageQuery }.
+export async function writeTrendPost({ trend, language = 'bn', pageName, audience }) {
   const langInstruction = LANGUAGE_INSTRUCTIONS[language] || LANGUAGE_INSTRUCTIONS.bn;
+  const who = audience || 'Bangladeshi adults aged 20-50';
   const system = [
-    `You write short, engaging Facebook posts for "${pageName}", a Bangladeshi Facebook Page that talks about what's trending/viral in Bangladesh right now.`,
+    `You run the Facebook Page "${pageName}". Its audience is ${who} living in Bangladesh. You turn what's trending in Bangladesh into short, engaging posts for them.`,
+    `Today is ${todayInDhaka()} (Bangladesh time).`,
+    'STEP 1 - decide whether to skip. Set "skip": true if ANY of these apply:',
+    '- the topic is about a death, disaster, accident, crime, violence, war, or political unrest;',
+    '- it is partisan politics, an election dispute, or religiously divisive;',
+    '- it has no real connection to life, interests, sport, entertainment, shopping, tech or culture of people in Bangladesh;',
+    '- it is adult/18+ content, gambling or betting, or would not suit a family-friendly business Page.',
+    'STEP 2 - if not skipped, write the post:',
     langInstruction,
-    'Keep it to 2-4 short sentences plus 3-6 relevant hashtags on a new line at the end (mix Bangla and English hashtags as appropriate). No markdown, no asterisks, no emoji overload (2-4 emoji max). Do not use quotation marks around the whole post.',
-    SAFETY_SYSTEM_NOTE
-  ].join('\n\n');
+    `Write for ${who}: practical, relatable, everyday-life angles (work, family, money, food, cricket, entertainment, tech, festivals). Not childish, no teen slang.`,
+    'FACTS: use ONLY facts stated in the topic and headlines given. Never invent dates, scores, prices, places, quotes or claims like "today". If the headlines give little detail, write a light question or conversation-starter about the topic instead of stating facts.',
+    'Format: 2-4 short sentences, then 3-6 hashtags on a new line (Bangla and English mixed). No markdown, no asterisks, 2-4 emoji max, no quotation marks around the post.',
+    'STEP 3 - image: give a short, general ENGLISH stock-photo search phrase (2-4 words) that visually fits the post, e.g. "cricket stadium crowd", "electric car", "Dhaka street food". Never a person\'s name or a brand logo.',
+    'Reply with ONLY a JSON object, no other text: {"skip": boolean, "reason": string, "caption": string, "image_query": string}. When skipping, caption and image_query may be empty strings.'
+  ].join('\n');
 
   const user = [
     `Trending topic: ${trend.title}`,
-    trend.context ? `Context from news headlines: ${trend.context}` : '',
-    'Write one Facebook post about this trend for our page\'s audience.'
+    trend.context ? `News headlines about it: ${trend.context}` : 'News headlines about it: (none available)',
+    trend.traffic ? `Approximate searches: ${trend.traffic}` : ''
   ].filter(Boolean).join('\n');
 
-  return callLLM({ system, user, maxTokens: 400 });
+  const raw = await callLLM({ system, user, maxTokens: 500, json: true });
+  if (raw.trim() === SKIP) return { skip: true, reason: 'blocked by the AI provider safety filter' };
+
+  let data;
+  try {
+    data = parseJsonReply(raw);
+  } catch (e) {
+    return { skip: true, reason: `could not read the AI reply (${e.message})` };
+  }
+  if (data.skip === true) return { skip: true, reason: data.reason || 'not suitable' };
+  const caption = String(data.caption || '').trim();
+  if (!caption) return { skip: true, reason: 'AI returned an empty caption' };
+  const imageQuery = String(data.image_query || '').trim() || 'Bangladesh';
+  return { skip: false, caption, imageQuery };
 }
 
 export async function writePageAbout({ pageName, recentTopics = [], language = 'bn' }) {

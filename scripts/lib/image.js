@@ -31,12 +31,13 @@ async function searchUnsplash(query) {
   return { url: photo.urls.regular, credit: `📷 ${name} / Unsplash` };
 }
 
-export async function pickImageForTrend(trend) {
+export async function pickImageForTrend(trend, imageQuery) {
   if (String(process.env.ALLOW_TREND_PICTURES).toLowerCase() === 'true'
       && /^https?:\/\//.test(trend.picture || '')) {
     return { url: trend.picture, credit: '' };
   }
-  for (const query of [trend.title, 'Bangladesh']) {
+  const queries = [...new Set([imageQuery, 'Bangladesh'].filter(Boolean))];
+  for (const query of queries) {
     try {
       const found = await searchUnsplash(query);
       if (found) return found;

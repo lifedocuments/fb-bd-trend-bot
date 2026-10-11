@@ -2,10 +2,15 @@ name: Post a BD trend to Facebook
 
 on:
   schedule:
-    # 10:00 and 19:00 Bangladesh time (UTC+6) = 04:00 and 13:00 UTC.
-    # Cron is always UTC on GitHub Actions regardless of where you are.
-    - cron: '0 4 * * *'
-    - cron: '0 13 * * *'
+    # Three posts a day at Bangladesh peak times (UTC+6):
+    #   09:00 BD = 03:00 UTC (morning commute / office start)
+    #   14:00 BD = 08:00 UTC (lunch break)
+    #   21:00 BD = 15:00 UTC (evening, the busiest Facebook time)
+    # Cron is always UTC on GitHub Actions, and GitHub may start scheduled
+    # runs a little late at busy times.
+    - cron: '0 3 * * *'
+    - cron: '0 8 * * *'
+    - cron: '0 15 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -42,6 +47,7 @@ jobs:
           FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           PAGE_NAME: ${{ vars.PAGE_NAME }}
+          TARGET_AUDIENCE: ${{ vars.TARGET_AUDIENCE }}
           POST_LANGUAGE: ${{ vars.POST_LANGUAGE }}
           AUTO_PUBLISH: ${{ vars.AUTO_PUBLISH }}
           ALLOW_TREND_PICTURES: ${{ vars.ALLOW_TREND_PICTURES }}

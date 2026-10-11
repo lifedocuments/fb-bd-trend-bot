@@ -6,15 +6,18 @@ automated via GitHub Actions, no server to run or pay for.
 
 ## How it works
 
-1. A GitHub Actions workflow runs on a schedule (default: twice a day).
+1. A GitHub Actions workflow runs on a schedule (default: three times a day
+   at 09:00, 14:00 and 21:00 Bangladesh time).
 2. It fetches Google's "Daily Trending Searches" feed for Bangladesh (free,
    no API key).
 3. It filters out anything that looks like a death, disaster, crime, or
    political flashpoint — see "Safety" below.
 4. It picks the first trend you haven't posted about before, and asks the AI
-   (Gemini, free tier) to write a short Facebook caption about it (Bangla by default).
-5. It finds an image for the post on Unsplash (free stock photos, with a
-   photographer credit added to the caption).
+   (Gemini, free tier) to check it suits the Page's audience (Bangladeshi
+   adults 20-50 by default; skips foreign-only, political, adult or
+   tragic topics), then to write a short Facebook caption about it (Bangla by default).
+5. It finds an image on Unsplash (free stock photos) using a general search
+   phrase the AI suggests, and adds the photographer credit to the caption.
 6. It posts the photo + caption to your Facebook Page via the Graph API —
    **as a draft in Meta Business Suite → Content → Drafts by default**, so
    nothing goes live until you've
@@ -138,7 +141,8 @@ Under the **Variables** tab, add these (not secret, just settings):
 - `POST_LANGUAGE` — `bn` (Bangla), `en` (English), or `banglish`
 - `AUTO_PUBLISH` — leave unset or `false` to start (drafts only); set to
   `true` once you've reviewed a few drafts and trust the output
-- Optional: `GEMINI_MODEL`, `LLM_PROVIDER` (`gemini` or `claude`),
+- Optional: `TARGET_AUDIENCE` (default `Bangladeshi adults aged 20-50`),
+  `GEMINI_MODEL`, `LLM_PROVIDER` (`gemini` or `claude`),
   `CLAUDE_MODEL`, `ALLOW_TREND_PICTURES` (`true` to also use Google
   Trends' own news pictures — off by default because those photos usually
   belong to news publishers)

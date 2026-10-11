@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fetchBdTrends } from './lib/trends.js';
 import { filterSafeTrends } from './lib/safety.js';
-import { writeTrendCaption } from './lib/claude.js';
+import { writeTrendPost } from './lib/claude.js';
 import { pickImageForTrend } from './lib/image.js';
 import { postPhotoToPage, postTextToPage } from './lib/facebook.js';
 
@@ -24,6 +24,7 @@ const DRY_RUN = String(process.env.DRY_RUN).toLowerCase() === 'true';
 const AUTO_PUBLISH = String(process.env.AUTO_PUBLISH).toLowerCase() === 'true';
 const LANGUAGE = process.env.POST_LANGUAGE || 'bn';
 const PAGE_NAME = process.env.PAGE_NAME || 'our Page';
+const AUDIENCE = process.env.TARGET_AUDIENCE || 'Bangladeshi adults aged 20-50';
 
 async function loadPostedLog() {
   try {
@@ -70,21 +71,28 @@ async function main() {
     console.log(`[post-trend] Trying trend: "${trend.title}"`);
 
     let caption;
+    let imageQuery = '';
     if (DRY_RUN) {
       caption = `[DRY RUN] Would write a ${LANGUAGE} caption about: ${trend.title}`;
     } else {
-      caption = await writeTrendCaption({ trend, language: LANGUAGE, pageName: PAGE_NAME });
-      if (caption.trim() === 'SKIP_SENSITIVE_TOPIC') {
-        console.log(`[post-trend] AI flagged "${trend.title}" as sensitive. Trying next candidate.`);
+      const post = await writeTrendPost({ trend, language: LANGUAGE, pageName: PAGE_NAME, audience: AUDIENCE });
+      if (post.skip) {
+        console.log(`[post-trend] Skipping "${trend.title}": ${post.reason}. Trying next candidate.`);
+        // Remember it so later runs don't spend AI calls on it again.
+        posted.push({ title: trend.title, skippedAt: new Date().toISOString(), skipped: true, reason: post.reason });
+        await savePostedLog(posted);
         continue;
       }
+      caption = post.caption;
+      imageQuery = post.imageQuery;
+      console.log(`[post-trend] Image search phrase: "${imageQuery}"`);
     }
 
     let imageUrl = null;
     if (DRY_RUN) {
       imageUrl = '[DRY RUN would search Unsplash]';
     } else {
-      const image = await pickImageForTrend(trend);
+      const image = await pickImageForTrend(trend, imageQuery);
       if (image) {
         imageUrl = image.url;
         if (image.credit) caption = `${caption}\n\n${image.credit}`;
@@ -122,7 +130,7 @@ async function main() {
     return;
   }
 
-  console.log('[post-trend] All top candidates were flagged sensitive. Nothing posted this run.');
+  console.log('[post-trend] None of the top candidates suited the Page this run. Nothing posted; the next scheduled run will try again.');
 }
 
 main().catch((err) => {
