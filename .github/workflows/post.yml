@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Dry run (no Claude/Unsplash/Facebook calls, just fetch+filter trends)'
+        description: 'Dry run (no AI/Unsplash/Facebook calls, just fetch+filter trends)'
         type: boolean
         default: false
 
@@ -32,7 +32,11 @@ jobs:
 
       - name: Run posting script
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}

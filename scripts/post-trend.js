@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Main entry point: picks the best fresh, safe BD trend, writes a caption
-// for it with Claude, finds an image, and posts it to the Facebook Page.
+// for it with AI (Gemini or Claude), finds an image, and posts it to the Facebook Page.
 //
 // Run with DRY_RUN=true to fetch real trends and run the safety/dedupe
-// logic without calling Claude, Unsplash, or Facebook at all (no API keys
+// logic without calling the AI, Unsplash, or Facebook at all (no API keys
 // needed) — useful for a first sanity check. See README.md.
 
 import fs from 'node:fs/promises';
@@ -74,7 +74,7 @@ async function main() {
     } else {
       caption = await writeTrendCaption({ trend, language: LANGUAGE, pageName: PAGE_NAME });
       if (caption.trim() === 'SKIP_SENSITIVE_TOPIC') {
-        console.log(`[post-trend] Claude flagged "${trend.title}" as sensitive. Trying next candidate.`);
+        console.log(`[post-trend] AI flagged "${trend.title}" as sensitive. Trying next candidate.`);
         continue;
       }
     }

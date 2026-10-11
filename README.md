@@ -1,6 +1,6 @@
 # Facebook BD-Trend Bot
 
-Posts short, Claude-written text+image Facebook posts about what's trending
+Posts short, AI-written (Google Gemini by default, Claude optional) text+image Facebook posts about what's trending
 in Bangladesh right now, and keeps your Page's About text fresh — fully
 automated via GitHub Actions, no server to run or pay for.
 
@@ -11,14 +11,14 @@ automated via GitHub Actions, no server to run or pay for.
    no API key).
 3. It filters out anything that looks like a death, disaster, crime, or
    political flashpoint — see "Safety" below.
-4. It picks the first trend you haven't posted about before, and asks Claude
-   to write a short Facebook caption about it (Bangla by default).
+4. It picks the first trend you haven't posted about before, and asks the AI
+   (Gemini, free tier) to write a short Facebook caption about it (Bangla by default).
 5. It finds an image for the post — either the picture Google already
    associates with the trend, or a search on Unsplash (free stock photos).
 6. It posts the photo + caption to your Facebook Page via the Graph API —
    **as an unpublished draft by default**, so nothing goes live until you've
    reviewed it (see "Going fully live" below).
-7. A second, weekly workflow asks Claude to refresh your Page's About text
+7. A second, weekly workflow asks the AI to refresh your Page's About text
    based on recent topics.
 
 This first version is **text + image only**. Video is intentionally left
@@ -34,8 +34,8 @@ case, except optionally Unsplash at very high volume (unlikely here).
 
 1. A **Meta Developer App** + a **long-lived Page Access Token** for your
    Facebook Page.
-2. An **Anthropic API key** (lets the automation call Claude outside of
-   this chat).
+2. A **Google Gemini API key** (free tier; writes the posts). An Anthropic
+   API key is optional and only needed if you'd rather pay for Claude.
 3. An **Unsplash Access Key** (free; only used if a trend has no picture of
    its own).
 4. A **GitHub repository** to hold this code (GitHub Actions is free for
@@ -79,15 +79,25 @@ Development Mode apps can post to Pages that the app's own admins/developers
 manage, with no App Review needed. App Review is only required if you want
 other people's Pages to use this, which isn't the case here.
 
-### 2. Get an Anthropic API key
+### 2. Get a Google Gemini API key (free)
 
-Go to https://console.anthropic.com/settings/keys, sign in, and create a
-new API key. Copy it somewhere safe — you won't be able to see it again.
+1. Go to https://aistudio.google.com/apikey and sign in with a Google account.
+2. Click **Create API key** (accept the terms; create a new project if asked).
+3. Copy the key — it usually starts with `AIza`.
 
-Check https://docs.claude.com/en/docs/about-claude/models for the current
-model name and update `CLAUDE_MODEL` in your repo's GitHub Variables if the
-one in `scripts/lib/claude.js` has since been replaced (model names/versions
-change over time).
+No card is needed for the free tier, which easily covers 2 posts a day.
+Things to know: on the free tier Google may use your prompts/outputs to
+improve its products (fine for public trend posts — don't send private
+data), the free tier has daily rate limits, and you should check Google's
+Gemini API terms if the Page is a commercial/business Page.
+
+The bot uses Google's `gemini-flash-latest` alias by default. To pin a
+specific model, add a `GEMINI_MODEL` repository variable.
+
+**Optional — Claude instead (paid):** create a key at
+https://console.anthropic.com/settings/keys, add it as the
+`ANTHROPIC_API_KEY` secret, and either remove `GEMINI_API_KEY` or set the
+`LLM_PROVIDER` variable to `claude`. `CLAUDE_MODEL` overrides the model.
 
 ### 3. Get an Unsplash Access Key (free)
 
@@ -117,7 +127,7 @@ In your new repo: **Settings → Secrets and variables → Actions**.
 
 Under the **Secrets** tab, add each of these (click **New repository
 secret**):
-- `ANTHROPIC_API_KEY`
+- `GEMINI_API_KEY`
 - `FB_PAGE_ID`
 - `FB_PAGE_ACCESS_TOKEN`
 - `UNSPLASH_ACCESS_KEY`
@@ -127,13 +137,15 @@ Under the **Variables** tab, add these (not secret, just settings):
 - `POST_LANGUAGE` — `bn` (Bangla), `en` (English), or `banglish`
 - `AUTO_PUBLISH` — leave unset or `false` to start (drafts only); set to
   `true` once you've reviewed a few drafts and trust the output
+- Optional: `GEMINI_MODEL`, `LLM_PROVIDER` (`gemini` or `claude`),
+  `CLAUDE_MODEL`
 
 ## Testing before anything goes near your real Page
 
 **Step 1 — no credentials needed at all.** From your repo's **Actions**
 tab, open "Post a BD trend to Facebook" → **Run workflow** → tick
 **dry_run** → **Run workflow**. This fetches real trends, runs the
-sensitive-topic filter, and prints what it *would* post — no Claude,
+sensitive-topic filter, and prints what it *would* post — no AI,
 Unsplash, or Facebook calls happen, so this works even before you've set up
 any of the keys above.
 
@@ -161,9 +173,10 @@ them are a substitute for spot-checking it occasionally:
 
 - **Sensitive-topic filtering, two layers deep.** A keyword blocklist
   (`scripts/lib/safety.js`) skips trends that look like deaths, disasters,
-  crime, or unrest before they ever reach Claude. Claude is separately
-  instructed to refuse the same categories on its own. Neither is perfect —
-  keyword filters miss things worded unusually, and Claude can occasionally
+  crime, or unrest before they ever reach the AI. The AI is separately
+  instructed to refuse the same categories on its own (and Gemini's own
+  safety filter blocks are treated as a skip). Neither is perfect —
+  keyword filters miss things worded unusually, and the AI can occasionally
   misjudge borderline topics.
 - **Drafts by default.** `AUTO_PUBLISH` defaults to off, so posts queue as
   unpublished drafts until you deliberately turn it on.
@@ -198,8 +211,13 @@ them are a substitute for spot-checking it occasionally:
   token expired or was generated without the right permissions. Redo
   step 1 above (tokens from the long-lived-user-token exchange are the
   most durable).
-- **Claude API 401** — check `ANTHROPIC_API_KEY` is set correctly as a
-  repo *Secret* (not Variable).
+- **Gemini API 400/403** — check `GEMINI_API_KEY` is set correctly as a
+  repo *Secret* (not Variable). If it mentions the model, set a
+  `GEMINI_MODEL` variable to a current free Flash model from Google's
+  pricing page.
+- **Gemini HTTP 429** — the free tier's daily limit was hit; it resets
+  daily and the next scheduled run will try again.
+- **Claude API 401** (only if using Claude) — check `ANTHROPIC_API_KEY`.
 - **No image on posts** — either `UNSPLASH_ACCESS_KEY` isn't set, or the
   trend's search returned nothing; the script falls back to a text-only
   post rather than failing the whole run.

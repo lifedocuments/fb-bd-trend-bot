@@ -23,7 +23,11 @@ jobs:
 
       - name: Run About updater
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
           PAGE_NAME: ${{ vars.PAGE_NAME }}
