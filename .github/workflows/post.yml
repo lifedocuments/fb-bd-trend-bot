@@ -24,11 +24,11 @@ jobs:
   post:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Run posting script
         env:
@@ -43,6 +43,7 @@ jobs:
           PAGE_NAME: ${{ vars.PAGE_NAME }}
           POST_LANGUAGE: ${{ vars.POST_LANGUAGE }}
           AUTO_PUBLISH: ${{ vars.AUTO_PUBLISH }}
+          ALLOW_TREND_PICTURES: ${{ vars.ALLOW_TREND_PICTURES }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: node scripts/post-trend.js
 

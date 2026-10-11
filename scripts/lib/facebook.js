@@ -35,31 +35,43 @@ async function graphRequest(path, { method = 'GET', params = {} } = {}) {
   return data;
 }
 
-// Posts a photo with a caption in one call. `published: false` creates an
-// unpublished (draft) Page post that sits in Meta Business Suite's "Drafts"
-// for a human to review and publish — this is the default AUTO_PUBLISH=false
-// behavior so nothing goes live unattended until you've checked the quality
-// and trust the pipeline.
+// Posts a photo + caption.
+//
+// publish=true  -> one call to /photos, goes live immediately.
+// publish=false -> a real Meta Business Suite DRAFT (shows in Content ->
+//   Drafts, where you can preview, edit and publish it). This takes two
+//   calls: upload the photo without publishing it, then create an
+//   unpublished feed post of type DRAFT with that photo attached. (A plain
+//   /photos call with published=false only creates a hidden photo that
+//   never appears in the Drafts tab.)
 export async function postPhotoToPage({ pageId, imageUrl, caption, publish }) {
-  return graphRequest(`/${pageId}/photos`, {
+  if (publish) {
+    return graphRequest(`/${pageId}/photos`, {
+      method: 'POST',
+      params: { url: imageUrl, caption, published: 'true' }
+    });
+  }
+  const photo = await graphRequest(`/${pageId}/photos`, {
+    method: 'POST',
+    params: { url: imageUrl, published: 'false', temporary: 'true' }
+  });
+  if (!photo.id) throw new Error('Facebook did not return an id for the uploaded photo.');
+  return graphRequest(`/${pageId}/feed`, {
     method: 'POST',
     params: {
-      url: imageUrl,
-      caption,
-      published: String(!!publish)
+      message: caption,
+      'attached_media[0]': JSON.stringify({ media_fbid: photo.id }),
+      published: 'false',
+      unpublished_content_type: 'DRAFT'
     }
   });
 }
 
 // Text-only fallback when no image could be found for the trend.
 export async function postTextToPage({ pageId, message, publish }) {
-  return graphRequest(`/${pageId}/feed`, {
-    method: 'POST',
-    params: {
-      message,
-      published: String(!!publish)
-    }
-  });
+  const params = { message, published: String(!!publish) };
+  if (!publish) params.unpublished_content_type = 'DRAFT';
+  return graphRequest(`/${pageId}/feed`, { method: 'POST', params });
 }
 
 export async function updatePageAbout({ pageId, about }) {

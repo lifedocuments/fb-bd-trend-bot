@@ -13,10 +13,11 @@ automated via GitHub Actions, no server to run or pay for.
    political flashpoint — see "Safety" below.
 4. It picks the first trend you haven't posted about before, and asks the AI
    (Gemini, free tier) to write a short Facebook caption about it (Bangla by default).
-5. It finds an image for the post — either the picture Google already
-   associates with the trend, or a search on Unsplash (free stock photos).
+5. It finds an image for the post on Unsplash (free stock photos, with a
+   photographer credit added to the caption).
 6. It posts the photo + caption to your Facebook Page via the Graph API —
-   **as an unpublished draft by default**, so nothing goes live until you've
+   **as a draft in Meta Business Suite → Content → Drafts by default**, so
+   nothing goes live until you've
    reviewed it (see "Going fully live" below).
 7. A second, weekly workflow asks the AI to refresh your Page's About text
    based on recent topics.
@@ -138,7 +139,9 @@ Under the **Variables** tab, add these (not secret, just settings):
 - `AUTO_PUBLISH` — leave unset or `false` to start (drafts only); set to
   `true` once you've reviewed a few drafts and trust the output
 - Optional: `GEMINI_MODEL`, `LLM_PROVIDER` (`gemini` or `claude`),
-  `CLAUDE_MODEL`
+  `CLAUDE_MODEL`, `ALLOW_TREND_PICTURES` (`true` to also use Google
+  Trends' own news pictures — off by default because those photos usually
+  belong to news publishers)
 
 ## Testing before anything goes near your real Page
 

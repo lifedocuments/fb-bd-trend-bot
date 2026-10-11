@@ -53,7 +53,8 @@ async function main() {
   console.log(`[post-trend] ${safeTrends.length} passed the sensitive-topic filter.`);
 
   const posted = await loadPostedLog();
-  const postedTitles = new Set(posted.map((p) => normalizeTitle(p.title)));
+  // Dry-run entries (from older versions) don't count as posted.
+  const postedTitles = new Set(posted.filter((p) => !p.dryRun).map((p) => normalizeTitle(p.title)));
   const freshTrends = safeTrends.filter((t) => !postedTitles.has(normalizeTitle(t.title)));
   console.log(`[post-trend] ${freshTrends.length} haven't been posted before.`);
 
@@ -81,9 +82,13 @@ async function main() {
 
     let imageUrl = null;
     if (DRY_RUN) {
-      imageUrl = trend.picture || '[DRY RUN would search Unsplash]';
+      imageUrl = '[DRY RUN would search Unsplash]';
     } else {
-      imageUrl = await pickImageForTrend(trend);
+      const image = await pickImageForTrend(trend);
+      if (image) {
+        imageUrl = image.url;
+        if (image.credit) caption = `${caption}\n\n${image.credit}`;
+      }
     }
 
     console.log('[post-trend] Caption:\n' + caption);
@@ -108,7 +113,11 @@ async function main() {
         : '[post-trend] Saved as an unpublished draft — review and publish it from Meta Business Suite, or set AUTO_PUBLISH=true once you trust the pipeline.');
     }
 
-    posted.push({ title: trend.title, postedAt: new Date().toISOString(), dryRun: DRY_RUN });
+    if (DRY_RUN) {
+      console.log('[post-trend] DRY RUN — not recording this trend as posted.');
+      return;
+    }
+    posted.push({ title: trend.title, postedAt: new Date().toISOString() });
     await savePostedLog(posted);
     return;
   }

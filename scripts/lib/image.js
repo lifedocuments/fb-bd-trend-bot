@@ -1,43 +1,48 @@
-// Picks an image for a trend post. Prefers the picture Google Trends itself
-// associates with the trend (when present — often a relevant news photo),
-// and falls back to an Unsplash search on the trend title. Returns null if
-// neither works, so the caller can fall back to a text-only post rather than
-// failing the whole run.
+// Picks an image for a trend post.
+//
+// Default: Unsplash only (free to use). Google Trends' own suggested
+// picture is usually a news publisher's photo, and reposting that on a
+// business Page risks copyright complaints, so it is NOT used unless you set
+// the repo variable ALLOW_TREND_PICTURES=true.
+//
+// Unsplash's API terms ask apps to credit the photographer and to ping the
+// photo's download endpoint when a photo is used; both are done here.
+// Returns { url, credit } or null (caller then posts text-only).
 
 async function searchUnsplash(query) {
   const key = process.env.UNSPLASH_ACCESS_KEY;
   if (!key) return null;
 
-  const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=5&orientation=landscape`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Client-ID ${key}` }
-  });
-  if (!res.ok) return null;
+  const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=5&orientation=landscape&content_filter=high`;
+  const res = await fetch(url, { headers: { Authorization: `Client-ID ${key}` } });
+  if (!res.ok) {
+    console.warn(`[image] Unsplash search returned HTTP ${res.status}`);
+    return null;
+  }
   const data = await res.json();
-  const results = data.results || [];
-  if (!results.length) return null;
-  // Take the first result — Unsplash already ranks by relevance.
-  return results[0].urls?.regular || null;
+  const photo = (data.results || [])[0];
+  if (!photo?.urls?.regular) return null;
+
+  // Required by Unsplash's API guidelines when a photo is actually used.
+  if (photo.links?.download_location) {
+    fetch(photo.links.download_location, { headers: { Authorization: `Client-ID ${key}` } }).catch(() => {});
+  }
+  const name = photo.user?.name || 'Unsplash photographer';
+  return { url: photo.urls.regular, credit: `📷 ${name} / Unsplash` };
 }
 
 export async function pickImageForTrend(trend) {
-  if (trend.picture) {
-    // Google's own suggested image for this trend. Sanity-check it actually
-    // looks like an image URL before trusting it.
-    if (/^https?:\/\//.test(trend.picture)) return trend.picture;
+  if (String(process.env.ALLOW_TREND_PICTURES).toLowerCase() === 'true'
+      && /^https?:\/\//.test(trend.picture || '')) {
+    return { url: trend.picture, credit: '' };
   }
-  try {
-    const fromUnsplash = await searchUnsplash(trend.title);
-    if (fromUnsplash) return fromUnsplash;
-  } catch (e) {
-    console.warn('Unsplash search failed:', e.message);
+  for (const query of [trend.title, 'Bangladesh']) {
+    try {
+      const found = await searchUnsplash(query);
+      if (found) return found;
+    } catch (e) {
+      console.warn(`[image] Unsplash search for "${query}" failed:`, e.message);
+    }
   }
-  // Last resort: a generic Bangladesh-flavoured query, so posts aren't
-  // text-only just because the specific trend had no good image match.
-  try {
-    return await searchUnsplash('Bangladesh');
-  } catch (e) {
-    console.warn('Unsplash fallback search failed:', e.message);
-    return null;
-  }
+  return null;
 }
