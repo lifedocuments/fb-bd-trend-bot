@@ -48,6 +48,8 @@ jobs:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           PAGE_NAME: ${{ vars.PAGE_NAME }}
           TARGET_AUDIENCE: ${{ vars.TARGET_AUDIENCE }}
+          BRAND_HASHTAG: ${{ vars.BRAND_HASHTAG }}
+          EVERGREEN_FALLBACK: ${{ vars.EVERGREEN_FALLBACK }}
           POST_LANGUAGE: ${{ vars.POST_LANGUAGE }}
           AUTO_PUBLISH: ${{ vars.AUTO_PUBLISH }}
           ALLOW_TREND_PICTURES: ${{ vars.ALLOW_TREND_PICTURES }}

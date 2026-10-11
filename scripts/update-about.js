@@ -26,7 +26,7 @@ async function main() {
   try {
     const raw = await fs.readFile(LOG_PATH, 'utf8');
     const posted = JSON.parse(raw);
-    recentTopics = posted.filter((p) => !p.skipped && !p.dryRun).slice(-10).map((p) => p.title);
+    recentTopics = posted.filter((p) => !p.skipped && !p.dryRun && !p.evergreen).slice(-10).map((p) => p.title);
   } catch {
     // No log yet — fine, writePageAbout handles an empty list.
   }

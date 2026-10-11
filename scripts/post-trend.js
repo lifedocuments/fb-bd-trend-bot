@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { fetchBdTrends } from './lib/trends.js';
 import { filterSafeTrends } from './lib/safety.js';
 import { writeTrendPost } from './lib/claude.js';
+import { EVERGREEN_TOPICS } from './lib/evergreen.js';
 import { pickImageForTrend } from './lib/image.js';
 import { postPhotoToPage, postTextToPage } from './lib/facebook.js';
 
@@ -25,6 +26,8 @@ const AUTO_PUBLISH = String(process.env.AUTO_PUBLISH).toLowerCase() === 'true';
 const LANGUAGE = process.env.POST_LANGUAGE || 'bn';
 const PAGE_NAME = process.env.PAGE_NAME || 'our Page';
 const AUDIENCE = process.env.TARGET_AUDIENCE || 'Bangladeshi adults aged 20-50';
+const BRAND_HASHTAG = process.env.BRAND_HASHTAG || '#SakinMartBD';
+const EVERGREEN_ON = String(process.env.EVERGREEN_FALLBACK ?? 'true').toLowerCase() !== 'false';
 
 async function loadPostedLog() {
   try {
@@ -59,28 +62,37 @@ async function main() {
   const freshTrends = safeTrends.filter((t) => !postedTitles.has(normalizeTitle(t.title)));
   console.log(`[post-trend] ${freshTrends.length} haven't been posted before.`);
 
-  if (!freshTrends.length) {
+  // Candidates: fresh trends first (in trending order), then evergreen
+  // topics so the Page never goes quiet on a slow trends day.
+  const candidates = freshTrends.slice(0, 5).map((t) => ({ trend: t, evergreen: false }));
+  if (EVERGREEN_ON) {
+    const recentEvergreen = new Set(posted.filter((p) => p.evergreen).slice(-(EVERGREEN_TOPICS.length - 1)).map((p) => p.title));
+    const nextTopics = EVERGREEN_TOPICS.filter((t) => !recentEvergreen.has(t)).slice(0, 2);
+    candidates.push(...nextTopics.map((t) => ({ trend: { title: t, context: '' }, evergreen: true })));
+  }
+  if (!candidates.length) {
     console.log('[post-trend] No fresh, safe trend available right now. Exiting without posting.');
     return;
   }
 
-  // Try candidates in order (trending rank) until one actually produces a
-  // caption — Claude itself may also refuse a trend as sensitive even after
-  // the keyword filter let it through (see SAFETY note in claude.js).
-  for (const trend of freshTrends.slice(0, 5)) {
-    console.log(`[post-trend] Trying trend: "${trend.title}"`);
+  for (const { trend, evergreen } of candidates) {
+    console.log(`[post-trend] Trying ${evergreen ? 'evergreen topic' : 'trend'}: "${trend.title}"`);
 
     let caption;
     let imageQuery = '';
     if (DRY_RUN) {
       caption = `[DRY RUN] Would write a ${LANGUAGE} caption about: ${trend.title}`;
     } else {
-      const post = await writeTrendPost({ trend, language: LANGUAGE, pageName: PAGE_NAME, audience: AUDIENCE });
+      const post = await writeTrendPost({
+        trend, evergreen, language: LANGUAGE, pageName: PAGE_NAME, audience: AUDIENCE, brandHashtag: BRAND_HASHTAG
+      });
       if (post.skip) {
         console.log(`[post-trend] Skipping "${trend.title}": ${post.reason}. Trying next candidate.`);
-        // Remember it so later runs don't spend AI calls on it again.
-        posted.push({ title: trend.title, skippedAt: new Date().toISOString(), skipped: true, reason: post.reason });
-        await savePostedLog(posted);
+        // Remember skipped trends so later runs don't spend AI calls on them.
+        if (!evergreen) {
+          posted.push({ title: trend.title, skippedAt: new Date().toISOString(), skipped: true, reason: post.reason });
+          await savePostedLog(posted);
+        }
         continue;
       }
       caption = post.caption;
@@ -103,34 +115,32 @@ async function main() {
     console.log('[post-trend] Image URL: ' + imageUrl);
 
     if (DRY_RUN) {
-      console.log('[post-trend] DRY RUN — not calling the Facebook API.');
-    } else {
-      const pageId = process.env.FB_PAGE_ID;
-      if (!pageId) throw new Error('FB_PAGE_ID is not set.');
-
-      let result;
-      if (imageUrl && /^https?:\/\//.test(imageUrl)) {
-        result = await postPhotoToPage({ pageId, imageUrl, caption, publish: AUTO_PUBLISH });
-      } else {
-        console.warn('[post-trend] No image found — posting text-only.');
-        result = await postTextToPage({ pageId, message: caption, publish: AUTO_PUBLISH });
-      }
-      console.log('[post-trend] Facebook API response:', JSON.stringify(result));
-      console.log(AUTO_PUBLISH
-        ? '[post-trend] Published live to the Page.'
-        : '[post-trend] Saved as an unpublished draft — review and publish it from Meta Business Suite, or set AUTO_PUBLISH=true once you trust the pipeline.');
-    }
-
-    if (DRY_RUN) {
-      console.log('[post-trend] DRY RUN — not recording this trend as posted.');
+      console.log('[post-trend] DRY RUN — not calling the Facebook API or recording anything.');
       return;
     }
-    posted.push({ title: trend.title, postedAt: new Date().toISOString() });
+
+    const pageId = process.env.FB_PAGE_ID;
+    if (!pageId) throw new Error('FB_PAGE_ID is not set.');
+    let result;
+    if (imageUrl && /^https?:\/\//.test(imageUrl)) {
+      result = await postPhotoToPage({ pageId, imageUrl, caption, publish: AUTO_PUBLISH });
+    } else {
+      console.warn('[post-trend] No image found — posting text-only.');
+      result = await postTextToPage({ pageId, message: caption, publish: AUTO_PUBLISH });
+    }
+    console.log('[post-trend] Facebook API response:', JSON.stringify(result));
+    console.log(AUTO_PUBLISH
+      ? '[post-trend] Published live to the Page.'
+      : '[post-trend] Saved as an unpublished draft — review and publish it from Meta Business Suite, or set AUTO_PUBLISH=true once you trust the pipeline.');
+
+    posted.push(evergreen
+      ? { title: trend.title, postedAt: new Date().toISOString(), evergreen: true }
+      : { title: trend.title, postedAt: new Date().toISOString() });
     await savePostedLog(posted);
     return;
   }
 
-  console.log('[post-trend] None of the top candidates suited the Page this run. Nothing posted; the next scheduled run will try again.');
+  console.log('[post-trend] None of the candidates suited the Page this run. Nothing posted; the next scheduled run will try again.');
 }
 
 main().catch((err) => {

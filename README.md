@@ -142,6 +142,9 @@ Under the **Variables** tab, add these (not secret, just settings):
 - `AUTO_PUBLISH` — leave unset or `false` to start (drafts only); set to
   `true` once you've reviewed a few drafts and trust the output
 - Optional: `TARGET_AUDIENCE` (default `Bangladeshi adults aged 20-50`),
+  `BRAND_HASHTAG` (default `#SakinMartBD`, added to every post),
+  `EVERGREEN_FALLBACK` (`false` to turn off evergreen posts on slow days —
+  edit the topic list in `scripts/lib/evergreen.js`),
   `GEMINI_MODEL`, `LLM_PROVIDER` (`gemini` or `claude`),
   `CLAUDE_MODEL`, `ALLOW_TREND_PICTURES` (`true` to also use Google
   Trends' own news pictures — off by default because those photos usually

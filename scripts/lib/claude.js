@@ -167,10 +167,26 @@ function parseJsonReply(text) {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
+// Keeps at most 2 topic hashtags from the trailing hashtag line(s) and always
+// ends with the Page's brand hashtag, so every post carries it.
+export function finalizeHashtags(caption, brandHashtag = '#SakinMartBD', maxTopicTags = 2) {
+  const brand = brandHashtag ? (brandHashtag.startsWith('#') ? brandHashtag : '#' + brandHashtag) : '';
+  const lines = caption.trim().split('\n');
+  const tags = [];
+  while (lines.length && /^\s*(#[^\s#]+\s*)+$/.test(lines[lines.length - 1])) {
+    tags.unshift(...lines.pop().trim().split(/\s+/));
+  }
+  while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+  const topic = [...new Set(tags)].filter((t) => t.toLowerCase() !== brand.toLowerCase()).slice(0, maxTopicTags);
+  const finalTags = [...topic, brand].filter(Boolean);
+  const body = lines.join('\n').trim();
+  return finalTags.length ? `${body}\n\n${finalTags.join(' ')}` : body;
+}
+
 // Decides whether a trend suits the Page, and if so writes the post and an
 // image search phrase — all in one AI call to stay well inside free limits.
 // Returns { skip: true, reason } or { skip: false, caption, imageQuery }.
-export async function writeTrendPost({ trend, language = 'bn', pageName, audience }) {
+export async function writeTrendPost({ trend, language = 'bn', pageName, audience, evergreen = false, brandHashtag = '#SakinMartBD' }) {
   const langInstruction = LANGUAGE_INSTRUCTIONS[language] || LANGUAGE_INSTRUCTIONS.bn;
   const who = audience || 'Bangladeshi adults aged 20-50';
   const system = [
@@ -185,16 +201,22 @@ export async function writeTrendPost({ trend, language = 'bn', pageName, audienc
     langInstruction,
     `Write for ${who}: practical, relatable, everyday-life angles (work, family, money, food, cricket, entertainment, tech, festivals). Not childish, no teen slang.`,
     'FACTS: use ONLY facts stated in the topic and headlines given. Never invent dates, scores, prices, places, quotes or claims like "today". If the headlines give little detail, write a light question or conversation-starter about the topic instead of stating facts.',
-    'Format: 2-4 short sentences, then 3-6 hashtags on a new line (Bangla and English mixed). No markdown, no asterisks, 2-4 emoji max, no quotation marks around the post.',
+    'End with one short, natural question that invites people to share their own opinion or experience in the comments (e.g. "আপনার প্রিয় কোনটা?"). Never ask people to like, share, tag or type something to win — Facebook reduces reach for that kind of engagement bait.',
+    'Format: 2-4 short sentences including the closing question, then exactly 2 relevant hashtags on a new line (the Page\'s brand hashtag is added automatically). No markdown, no asterisks, 2-4 emoji max, no quotation marks around the post.',
     'STEP 3 - image: give a short, general ENGLISH stock-photo search phrase (2-4 words) that visually fits the post, e.g. "cricket stadium crowd", "electric car", "Dhaka street food". Never a person\'s name or a brand logo.',
     'Reply with ONLY a JSON object, no other text: {"skip": boolean, "reason": string, "caption": string, "image_query": string}. When skipping, caption and image_query may be empty strings.'
   ].join('\n');
 
-  const user = [
-    `Trending topic: ${trend.title}`,
-    trend.context ? `News headlines about it: ${trend.context}` : 'News headlines about it: (none available)',
-    trend.traffic ? `Approximate searches: ${trend.traffic}` : ''
-  ].filter(Boolean).join('\n');
+  const user = evergreen
+    ? [
+        `Evergreen topic (not news): ${trend.title}`,
+        'Write timeless, friendly content about this everyday Bangladeshi topic. Do not mention news, dates, "today", prices or statistics. Do not skip it unless it truly breaks a rule above.'
+      ].join('\n')
+    : [
+        `Trending topic: ${trend.title}`,
+        trend.context ? `News headlines about it: ${trend.context}` : 'News headlines about it: (none available)',
+        trend.traffic ? `Approximate searches: ${trend.traffic}` : ''
+      ].filter(Boolean).join('\n');
 
   const raw = await callLLM({ system, user, maxTokens: 500, json: true });
   if (raw.trim() === SKIP) return { skip: true, reason: 'blocked by the AI provider safety filter' };
@@ -206,8 +228,9 @@ export async function writeTrendPost({ trend, language = 'bn', pageName, audienc
     return { skip: true, reason: `could not read the AI reply (${e.message})` };
   }
   if (data.skip === true) return { skip: true, reason: data.reason || 'not suitable' };
-  const caption = String(data.caption || '').trim();
-  if (!caption) return { skip: true, reason: 'AI returned an empty caption' };
+  const rawCaption = String(data.caption || '').trim();
+  if (!rawCaption) return { skip: true, reason: 'AI returned an empty caption' };
+  const caption = finalizeHashtags(rawCaption, brandHashtag);
   const imageQuery = String(data.image_query || '').trim() || 'Bangladesh';
   return { skip: false, caption, imageQuery };
 }

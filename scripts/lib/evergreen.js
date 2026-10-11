@@ -1,0 +1,35 @@
+// Timeless Bangladesh topics used when no trending topic suits the Page in a
+// run, so the Page never goes quiet. Picked in order, skipping any used
+// recently. Edit freely: add, remove or reword lines.
+export const EVERGREEN_TOPICS = [
+  'Dhaka street food favourites like fuchka and chotpoti',
+  'Bangladeshi breakfast: paratha, bhaji and a cup of tea',
+  'Favourite ways to cook ilish (hilsa) at home',
+  'Winter pitha season and everyone\'s favourite pitha',
+  'Mango and jackfruit season favourites',
+  'Healthy home-cooked lunch box ideas for office',
+  'Smart ways to save money on monthly grocery shopping',
+  'Simple ways to cut the electricity bill at home',
+  'Mobile banking safety: never share your PIN or OTP',
+  'Tips for safe online shopping and avoiding scams',
+  'Small business ideas people successfully start from home',
+  'Morning routines that help busy professionals',
+  'Beating Dhaka traffic: how people make commute time useful',
+  'Smartphone tips: freeing up storage and saving battery',
+  'Weekend family day-trip ideas near Dhaka',
+  'Sylhet tea gardens and their calm green views',
+  'Cox\'s Bazar beach memories',
+  'The Sundarbans and the Royal Bengal tiger',
+  'Rickshaw art: Bangladesh\'s colourful street art',
+  'Jamdani saree heritage',
+  'Childhood games we played growing up in Bangladesh',
+  'Rainy-day memories: tea, khichuri and the sound of rain',
+  'Ways to beat the summer heat at home',
+  'Favourite Bangla books worth reading again',
+  'Budget-friendly home decor ideas',
+  'Family traditions during holiday visits to the village',
+  'Classic Bangla songs that bring back memories',
+  'Most memorable moments of Bangladesh cricket fans',
+  'Tea stall conversations: the heart of every neighbourhood',
+  'Saving tips for young families planning their future'
+];
