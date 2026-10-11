@@ -17,15 +17,10 @@ function pickProvider() {
   throw new Error('No AI key set. Add GEMINI_API_KEY (free) or ANTHROPIC_API_KEY as a GitHub secret.');
 }
 
-async function callGemini({ system, user, maxTokens }) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');
-  // "gemini-flash-latest" is Google's alias for the current Flash model, so
-  // this keeps working when Google retires older model versions. Override
-  // with the GEMINI_MODEL repo variable if you want to pin a specific one.
-  const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+async function callGeminiModel({ model, apiKey, system, user, maxTokens }) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
@@ -40,10 +35,12 @@ async function callGemini({ system, user, maxTokens }) {
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    if (res.status === 429) {
-      throw new Error(`Gemini free-tier limit reached (HTTP 429). It resets daily; try again later. ${body.slice(0, 200)}`);
-    }
-    throw new Error(`Gemini API returned HTTP ${res.status}: ${body.slice(0, 300)}`);
+    const err = new Error(res.status === 429
+      ? `Gemini free-tier limit reached (HTTP 429). It resets daily; try again later. ${body.slice(0, 200)}`
+      : `Gemini API returned HTTP ${res.status}: ${body.slice(0, 300)}`);
+    // 500/503 = Google's side is busy or hiccuping: worth retrying.
+    err.retryable = res.status === 500 || res.status === 503;
+    throw err;
   }
   const data = await res.json();
 
@@ -61,6 +58,33 @@ async function callGemini({ system, user, maxTokens }) {
     .trim();
   if (!text) throw new Error(`Gemini API returned an empty response (finishReason: ${cand.finishReason || 'unknown'}).`);
   return text;
+}
+
+async function callGemini({ system, user, maxTokens }) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');
+  // "gemini-flash-latest" is Google's alias for the current Flash model, so
+  // this keeps working when Google retires older versions. If it is busy
+  // (HTTP 503), retry with a pause, then fall back to the lighter Flash-Lite
+  // model. Override with GEMINI_MODEL / GEMINI_FALLBACK_MODEL repo variables.
+  const primary = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+  const fallback = process.env.GEMINI_FALLBACK_MODEL || 'gemini-flash-lite-latest';
+  const waitMs = Number(process.env.GEMINI_RETRY_WAIT_MS ?? 20000);
+  const attempts = [primary, primary, primary, fallback, fallback];
+
+  let lastErr;
+  for (let i = 0; i < attempts.length; i++) {
+    try {
+      return await callGeminiModel({ model: attempts[i], apiKey, system, user, maxTokens });
+    } catch (err) {
+      lastErr = err;
+      if (!err.retryable || i === attempts.length - 1) throw err;
+      const next = attempts[i + 1];
+      console.warn(`[ai] ${attempts[i]} busy (${err.message.slice(0, 60)}…). Retrying with ${next} in ${Math.round(waitMs / 1000)}s.`);
+      await sleep(waitMs);
+    }
+  }
+  throw lastErr;
 }
 
 async function callClaude({ system, user, maxTokens }) {
