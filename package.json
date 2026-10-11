@@ -1,0 +1,17 @@
+{
+  "name": "fb-bd-trend-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Posts Bangladesh-trend-based text+image content to a Facebook Page, and keeps the Page's About text fresh, using Claude for writing and Google Trends for topic discovery.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "post": "node scripts/post-trend.js",
+    "post:dry-run": "DRY_RUN=true node scripts/post-trend.js",
+    "update-about": "node scripts/update-about.js",
+    "update-about:dry-run": "DRY_RUN=true node scripts/update-about.js"
+  },
+  "dependencies": {}
+}

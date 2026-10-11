@@ -1,0 +1,55 @@
+name: Post a BD trend to Facebook
+
+on:
+  schedule:
+    # 10:00 and 19:00 Bangladesh time (UTC+6) = 04:00 and 13:00 UTC.
+    # Cron is always UTC on GitHub Actions regardless of where you are.
+    - cron: '0 4 * * *'
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no Claude/Unsplash/Facebook calls, just fetch+filter trends)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fb-bd-trend-bot-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run posting script
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          PAGE_NAME: ${{ vars.PAGE_NAME }}
+          POST_LANGUAGE: ${{ vars.POST_LANGUAGE }}
+          AUTO_PUBLISH: ${{ vars.AUTO_PUBLISH }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: node scripts/post-trend.js
+
+      - name: Commit updated posted-trends log
+        run: |
+          git config user.name "fb-bd-trend-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if ! git diff --quiet -- data/posted.json; then
+            git add data/posted.json
+            git commit -m "Log posted trend [skip ci]"
+            git push
+          else
+            echo "No change to data/posted.json (nothing posted, or dry run)."
+          fi

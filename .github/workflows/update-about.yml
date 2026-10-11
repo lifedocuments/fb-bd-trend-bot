@@ -1,0 +1,32 @@
+name: Refresh Facebook Page About text
+
+on:
+  schedule:
+    # Every Monday at 09:00 Bangladesh time (UTC+6) = 03:00 UTC.
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (generate the text but do not write it to the Page)'
+        type: boolean
+        default: false
+
+jobs:
+  update-about:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run About updater
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          PAGE_NAME: ${{ vars.PAGE_NAME }}
+          POST_LANGUAGE: ${{ vars.POST_LANGUAGE }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: node scripts/update-about.js
