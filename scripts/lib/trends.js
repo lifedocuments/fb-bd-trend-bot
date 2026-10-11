@@ -9,7 +9,14 @@
 // Google's side degrades gracefully (you fall back to text-only posts)
 // instead of breaking the whole workflow run.
 
-const FEED_URL = 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=BD';
+// Google moved the public feed to /trending/rss; the old /trends/trendingsearches
+// address is kept only as a fallback. Set TRENDS_FEED_URL to override both.
+const FEED_URLS = process.env.TRENDS_FEED_URL
+  ? [process.env.TRENDS_FEED_URL]
+  : [
+      'https://trends.google.com/trending/rss?geo=BD',
+      'https://trends.google.com/trends/trendingsearches/daily/rss?geo=BD'
+    ];
 
 function extractAll(xml, tag) {
   // Matches both "<tag>...</tag>" and namespaced "<ht:tag>...</ht:tag>".
@@ -40,14 +47,27 @@ function splitItems(xml) {
   return items;
 }
 
-export async function fetchBdTrends() {
-  const res = await fetch(FEED_URL, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; fb-bd-trend-bot/1.0)' }
-  });
-  if (!res.ok) {
-    throw new Error(`Google Trends feed returned HTTP ${res.status}`);
+async function fetchFeedXml() {
+  const errors = [];
+  for (const url of FEED_URLS) {
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; fb-bd-trend-bot/1.0)' }
+      });
+      if (!res.ok) { errors.push(`${url} -> HTTP ${res.status}`); continue; }
+      const xml = await res.text();
+      if (!/<item>/.test(xml)) { errors.push(`${url} -> no <item> entries`); continue; }
+      console.log(`[trends] Using feed: ${url}`);
+      return xml;
+    } catch (err) {
+      errors.push(`${url} -> ${err.message}`);
+    }
   }
-  const xml = await res.text();
+  throw new Error('Could not load the Google Trends BD feed. Tried: ' + errors.join(' | '));
+}
+
+export async function fetchBdTrends() {
+  const xml = await fetchFeedXml();
   const itemChunks = splitItems(xml);
 
   const trends = itemChunks.map((chunk) => {
