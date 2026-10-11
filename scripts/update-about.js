@@ -47,6 +47,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('[update-about] FAILED:', err.message);
+  console.error('[update-about] FAILED:', err.message + (err.cause ? ' (cause: ' + (err.cause.message || err.cause) + ')' : ''));
   process.exitCode = 1;
 });

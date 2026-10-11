@@ -21,17 +21,35 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function callGeminiModel({ model, apiKey, system, user, maxTokens }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: 'user', parts: [{ text: user }] }],
-      // Newer Flash models may "think" before answering, which uses output
-      // tokens too — so allow generous headroom even for a short caption.
-      generationConfig: { maxOutputTokens: Math.max(maxTokens * 4, 2048), temperature: 0.9 }
-    })
-  });
+  // Cut off a request that hangs (Google overloaded) instead of waiting for
+  // Node's 5-minute default, so the retry/fallback below gets a chance.
+  const timeoutMs = Number(process.env.GEMINI_TIMEOUT_MS ?? 60000);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new DOMException('timeout', 'TimeoutError')), timeoutMs);
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+      signal: controller.signal,
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: user }] }],
+        // Newer Flash models may "think" before answering, which uses output
+        // tokens too — so allow generous headroom even for a short caption.
+        generationConfig: { maxOutputTokens: Math.max(maxTokens * 4, 2048), temperature: 0.9 }
+      })
+    });
+  } catch (netErr) {
+    const timedOut = netErr.name === 'TimeoutError' || netErr.name === 'AbortError';
+    const err = new Error(timedOut
+      ? `Gemini did not answer within ${Math.round(timeoutMs / 1000)}s (${model}).`
+      : `Could not reach Gemini (${model}): ${netErr.message}${netErr.cause ? ' — ' + netErr.cause.message : ''}`);
+    err.retryable = true;
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -39,7 +57,7 @@ async function callGeminiModel({ model, apiKey, system, user, maxTokens }) {
       ? `Gemini free-tier limit reached (HTTP 429). It resets daily; try again later. ${body.slice(0, 200)}`
       : `Gemini API returned HTTP ${res.status}: ${body.slice(0, 300)}`);
     // 500/503 = Google's side is busy or hiccuping: worth retrying.
-    err.retryable = res.status === 500 || res.status === 503;
+    err.retryable = [500, 502, 503, 504].includes(res.status);
     throw err;
   }
   const data = await res.json();
