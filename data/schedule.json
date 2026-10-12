@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-12",
+  "slots": [
+    9,
+    14,
+    21
+  ],
+  "reelSlot": 21,
+  "reason": "collecting data (trying every slot)",
+  "stats": [
+    {
+      "hour": 9,
+      "posts": 0,
+      "avgScore": 0
+    },
+    {
+      "hour": 12,
+      "posts": 0,
+      "avgScore": 0
+    },
+    {
+      "hour": 14,
+      "posts": 0,
+      "avgScore": 0
+    },
+    {
+      "hour": 17,
+      "posts": 0,
+      "avgScore": 0
+    },
+    {
+      "hour": 19,
+      "posts": 0,
+      "avgScore": 0
+    },
+    {
+      "hour": 21,
+      "posts": 0,
+      "avgScore": 0
+    }
+  ]
+}
