@@ -30,5 +30,40 @@
   {
     "title": "roston chase",
     "postedAt": "2026-10-11T15:06:47.294Z"
+  },
+  {
+    "title": "pumas unam vs cruz azul",
+    "skippedAt": "2026-10-12T03:17:23.209Z",
+    "skipped": true,
+    "reason": "The topic is about Mexican football (Pumas vs Cruz Azul), which has no direct connection or relevance to the daily life, interests, or culture of people in Bangladesh."
+  },
+  {
+    "title": "বাঘ",
+    "skippedAt": "2026-10-12T03:17:23.731Z",
+    "skipped": true,
+    "reason": "The topic is about a death and fatal accident, which violates the safety policy for skipping tragedy and accident news."
+  },
+  {
+    "title": "gta6 leaks",
+    "skippedAt": "2026-10-12T03:17:24.694Z",
+    "skipped": true,
+    "reason": "could not read the AI reply (Unexpected token 'জ', ...\"\"caption\":জিটিএ সিক্\"... is not valid JSON)"
+  },
+  {
+    "title": "atlético mineiro vs santos fc lineups",
+    "skippedAt": "2026-10-12T03:17:25.363Z",
+    "skipped": true,
+    "reason": "The topic is about foreign football betting tips and match lineups with low search volume and no direct relevance to daily life in Bangladesh."
+  },
+  {
+    "title": "x",
+    "skippedAt": "2026-10-12T03:17:25.858Z",
+    "skipped": true,
+    "reason": "Pro wrestling news from TNA has very low relevance and interest for the general Bangladeshi audience of Sakin Mart Bangladesh."
+  },
+  {
+    "title": "Dhaka street food favourites like fuchka and chotpoti",
+    "postedAt": "2026-10-12T03:17:31.356Z",
+    "evergreen": true
   }
 ]
