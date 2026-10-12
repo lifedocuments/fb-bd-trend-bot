@@ -27,7 +27,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: fb-bd-trend-bot-post
+  group: fb-page-posting
   cancel-in-progress: false
 
 jobs:
@@ -94,6 +94,8 @@ jobs:
           EVERGREEN_FALLBACK: ${{ vars.EVERGREEN_FALLBACK }}
           PHOTOCARDS: ${{ vars.PHOTOCARDS }}
           NEWS_LINK_COMMENT: ${{ vars.NEWS_LINK_COMMENT }}
+          STORIES: ${{ vars.STORIES }}
+          BREAKING_MAX_PER_DAY: ${{ vars.BREAKING_MAX_PER_DAY }}
           MAX_SPORTS_PER_DAY: ${{ vars.MAX_SPORTS_PER_DAY }}
           TOPIC_FEEDS: ${{ vars.TOPIC_FEEDS }}
           SPECIAL_DAYS: ${{ vars.SPECIAL_DAYS }}

@@ -17,7 +17,10 @@ import { EVERGREEN_TOPICS } from './lib/evergreen.js';
 import { specialDayFor } from './lib/special-days.js';
 import { makePhotocard } from './lib/photocard.js';
 import { pickImageForTrend } from './lib/image.js';
-import { postPhotoToPage, postTextToPage, commentOnPost, postReelToPage } from './lib/facebook.js';
+import { postPhotoToPage, postTextToPage, commentOnPost, postReelToPage, postStoryToPage } from './lib/facebook.js';
+import { makeStoryImage } from './lib/story.js';
+import { findBreaking } from './lib/breaking.js';
+import { breakingOptions } from './lib/breaking-config.js';
 import { makeReel } from './lib/reel.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,6 +38,8 @@ const MAX_SPORTS_PER_DAY = process.env.MAX_SPORTS_PER_DAY ? Number(process.env.M
 const TOPIC_FEEDS = /^none$/i.test(process.env.TOPIC_FEEDS || '')
   ? []
   : (process.env.TOPIC_FEEDS || 'ENTERTAINMENT,TECHNOLOGY,BUSINESS').toUpperCase().split(/[\s,]+/).filter(Boolean);
+const BREAKING = String(process.env.BREAKING).toLowerCase() === 'true';
+const STORIES_ON = String(process.env.STORIES ?? 'true').toLowerCase() !== 'false';
 const MAKE_REEL = String(process.env.MAKE_REEL).toLowerCase() === 'true';
 const SLOT_HOUR = Number(process.env.SLOT_HOUR) || null;
 const NEWS_COMMENT_ON = String(process.env.NEWS_LINK_COMMENT ?? 'true').toLowerCase() !== 'false';
@@ -128,38 +133,64 @@ async function main() {
   // Candidates: fresh trends first (in trending order), then evergreen
   // topics so the Page never goes quiet on a slow trends day.
   const candidates = [];
-  // A special day (Victory Day, Pohela Boishakh, ...) goes first, once per day.
-  const special = SPECIAL_DAYS_ON ? specialDayFor() : null;
-  if (special && !posted.some((p) => p.special === special.key)) {
-    console.log(`[post-trend] Today is a special day: ${special.name}.`);
-    candidates.push({ trend: { title: special.name, context: '' }, special });
-  }
-  // Sort trends into categories (one cheap AI call; keyword guess as backup),
-  // add non-sports news sections, then order everything for variety.
-  const topTrends = freshTrends.slice(0, 10);
-  const classifyOn = String(process.env.CLASSIFY_TOPICS ?? 'true').toLowerCase() !== 'false';
-  const cats = DRY_RUN || !classifyOn ? null : await classifyTopics(topTrends);
-  const trendPool = topTrends.map((t, i) => ({ ...t, origin: 'trend', category: cats?.[i] || guessCategory(`${t.title} ${t.context}`) }));
-  let newsPool = [];
-  if (TOPIC_FEEDS.length) {
-    const news = await fetchTopicNews(TOPIC_FEEDS);
-    newsPool = filterSafeTrends(news).filter((t) => !postedTitles.has(normalizeTitle(t.title)));
-    console.log(`[post-trend] ${newsPool.length} fresh stories from Google News sections (${TOPIC_FEEDS.join(', ')}).`);
-  }
-  const { ordered, todayCounts, lastCategory, droppedSports } = orderForVariety([...trendPool, ...newsPool], posted, { maxSportsPerDay: MAX_SPORTS_PER_DAY });
-  console.log(`[post-trend] Variety: today so far ${JSON.stringify(todayCounts)}, last post was "${lastCategory || 'none'}"${droppedSports ? `, holding back ${droppedSports} sports topic(s) (daily limit ${MAX_SPORTS_PER_DAY})` : ''}.`);
-  candidates.push(...ordered.map((t) => ({ trend: t, evergreen: false })));
-  if (EVERGREEN_ON) {
-    const recentEvergreen = new Set(posted.filter((p) => p.evergreen).slice(-(EVERGREEN_TOPICS.length - 1)).map((p) => p.title));
-    const nextTopics = EVERGREEN_TOPICS.filter((t) => !recentEvergreen.has(t)).slice(0, 2);
-    candidates.push(...nextTopics.map((t) => ({ trend: { title: t, context: '' }, evergreen: true })));
+  if (BREAKING) {
+    // Breaking mode: only a topic that just exploded in searches; no
+    // special days, news sections or evergreen fallback.
+    const { candidates: hot, reason } = findBreaking(safeTrends, posted, breakingOptions());
+    if (!hot.length) {
+      console.log(`[post-trend] Breaking check: nothing to post (${reason}).`);
+      return;
+    }
+    const top = hot.slice(0, 3);
+    const classifyOnB = String(process.env.CLASSIFY_TOPICS ?? 'true').toLowerCase() !== 'false';
+    const catsB = DRY_RUN || !classifyOnB ? null : await classifyTopics(top);
+    const opts = breakingOptions();
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date());
+    const sportsToday = posted.filter((p) => !p.skipped && p.category === 'sports' && p.postedAt
+      && new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date(p.postedAt)) === today).length;
+    for (const [i, t] of top.entries()) {
+      const category = catsB?.[i] || t.category;
+      if (category === 'sports' && sportsToday >= opts.maxSportsPerDay) {
+        console.log(`[post-trend] Breaking: skipping "${t.title}" — sports limit for today reached.`);
+        continue;
+      }
+      candidates.push({ trend: { ...t, origin: 'trend', category }, breaking: true });
+    }
+    console.log(`[post-trend] Breaking check: ${candidates.length} topic(s) above ${opts.minTraffic.toLocaleString('en')} searches.`);
+  } else {
+    // A special day (Victory Day, Pohela Boishakh, ...) goes first, once per day.
+    const special = SPECIAL_DAYS_ON ? specialDayFor() : null;
+    if (special && !posted.some((p) => p.special === special.key)) {
+      console.log(`[post-trend] Today is a special day: ${special.name}.`);
+      candidates.push({ trend: { title: special.name, context: '' }, special });
+    }
+    // Sort trends into categories (one cheap AI call; keyword guess as backup),
+    // add non-sports news sections, then order everything for variety.
+    const topTrends = freshTrends.slice(0, 10);
+    const classifyOn = String(process.env.CLASSIFY_TOPICS ?? 'true').toLowerCase() !== 'false';
+    const cats = DRY_RUN || !classifyOn ? null : await classifyTopics(topTrends);
+    const trendPool = topTrends.map((t, i) => ({ ...t, origin: 'trend', category: cats?.[i] || guessCategory(`${t.title} ${t.context}`) }));
+    let newsPool = [];
+    if (TOPIC_FEEDS.length) {
+      const news = await fetchTopicNews(TOPIC_FEEDS);
+      newsPool = filterSafeTrends(news).filter((t) => !postedTitles.has(normalizeTitle(t.title)));
+      console.log(`[post-trend] ${newsPool.length} fresh stories from Google News sections (${TOPIC_FEEDS.join(', ')}).`);
+    }
+    const { ordered, todayCounts, lastCategory, droppedSports } = orderForVariety([...trendPool, ...newsPool], posted, { maxSportsPerDay: MAX_SPORTS_PER_DAY });
+    console.log(`[post-trend] Variety: today so far ${JSON.stringify(todayCounts)}, last post was "${lastCategory || 'none'}"${droppedSports ? `, holding back ${droppedSports} sports topic(s) (daily limit ${MAX_SPORTS_PER_DAY})` : ''}.`);
+    candidates.push(...ordered.map((t) => ({ trend: t, evergreen: false })));
+    if (EVERGREEN_ON) {
+      const recentEvergreen = new Set(posted.filter((p) => p.evergreen).slice(-(EVERGREEN_TOPICS.length - 1)).map((p) => p.title));
+      const nextTopics = EVERGREEN_TOPICS.filter((t) => !recentEvergreen.has(t)).slice(0, 2);
+      candidates.push(...nextTopics.map((t) => ({ trend: { title: t, context: '' }, evergreen: true })));
+    }
   }
   if (!candidates.length) {
     console.log('[post-trend] No fresh, safe trend available right now. Exiting without posting.');
     return;
   }
 
-  for (const { trend, evergreen = false, special: sp = null } of candidates) {
+  for (const { trend, evergreen = false, special: sp = null, breaking = false } of candidates) {
     const kind = sp ? 'special' : evergreen ? 'evergreen' : 'trend';
     console.log(`[post-trend] Trying ${sp ? 'special day' : evergreen ? 'evergreen topic' : trend.origin === 'news' ? 'news story' : 'trend'}: "${trend.title}"${trend.category ? ` [${trend.category}]` : ''}`);
 
@@ -202,7 +233,7 @@ async function main() {
       visual = {
         imageUrl,
         headline,
-        label: sp ? 'বিশেষ দিন' : evergreen ? 'আলাপ' : 'ট্রেন্ডিং',
+        label: sp ? 'বিশেষ দিন' : evergreen ? 'আলাপ' : breaking ? 'এখন ট্রেন্ডিং' : 'ট্রেন্ডিং',
         credit: image?.cardCredit || '',
         pageName: PAGE_NAME,
         mood: sp?.mood === 'solemn' ? 'solemn' : 'normal'
@@ -270,6 +301,18 @@ async function main() {
     } else if (NEWS_COMMENT_ON && kind === 'trend' && newsUrl && !AUTO_PUBLISH) {
       console.log(`[post-trend] Draft mode: no comment added. News link for reference: ${newsUrl}`);
     }
+    // Also share it as a Page Story (top of followers' feeds for 24h).
+    if (AUTO_PUBLISH && STORIES_ON && visual) {
+      try {
+        const storyPath = await makeStoryImage({ ...visual });
+        if (storyPath) {
+          const st = await postStoryToPage({ pageId, filePath: storyPath });
+          console.log('[post-trend] Shared to the Page Story:', JSON.stringify(st));
+        }
+      } catch (e) {
+        console.warn(`[post-trend] Could not post the Story (the post itself is live): ${e.message}`);
+      }
+    }
     console.log(AUTO_PUBLISH
       ? '[post-trend] Published live to the Page.'
       : '[post-trend] Saved as an unpublished draft — review and publish it from Meta Business Suite, or set AUTO_PUBLISH=true once you trust the pipeline.');
@@ -281,6 +324,7 @@ async function main() {
     const postId = commentTargets(result, pageId, format)[0];
     if (postId && AUTO_PUBLISH) entry.postId = postId;
     if (SLOT_HOUR) entry.slot = SLOT_HOUR;
+    if (breaking) entry.breaking = true;
     if (evergreen) entry.evergreen = true;
     if (sp) entry.special = sp.key;
     posted.push(entry);

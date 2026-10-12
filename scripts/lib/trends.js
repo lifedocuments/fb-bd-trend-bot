@@ -84,7 +84,8 @@ export async function fetchBdTrends() {
       context: newsTitles.slice(0, 3).join(' | '),
       newsUrl: newsUrls[0] || '',
       newsTitle: newsTitles[0] || '',
-      newsSource: newsSources[0] || ''
+      newsSource: newsSources[0] || '',
+      pubDate: extractAll(chunk, 'pubDate')[0] || ''
     };
   }).filter((t) => t.title);
 

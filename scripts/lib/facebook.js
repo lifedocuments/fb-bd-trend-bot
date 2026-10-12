@@ -117,6 +117,14 @@ export async function postReelToPage({ pageId, filePath, description, publish })
   return { ...fin, id: start.video_id, video_id: start.video_id };
 }
 
+// Posts an image as a Page Story (visible 24h at the top of the feed):
+// upload the photo unpublished, then publish it as a photo story.
+export async function postStoryToPage({ pageId, filePath }) {
+  const photo = await graphUpload(`/${pageId}/photos`, { published: 'false' }, filePath);
+  if (!photo.id) throw new Error('Facebook did not return an id for the Story photo.');
+  return graphRequest(`/${pageId}/photo_stories`, { method: 'POST', params: { photo_id: photo.id } });
+}
+
 // Reads reactions/comments/shares for our own posts (batched, 50 per call).
 // Returns { [id]: { reactions, comments, shares } }; missing ids are skipped.
 export async function fetchEngagement(ids, { includeShares = true } = {}) {

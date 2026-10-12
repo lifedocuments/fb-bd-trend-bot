@@ -1,0 +1,96 @@
+name: Breaking trend check
+
+# Every hour from 08:30 to 23:30 Bangladesh time, look for a topic that has
+# suddenly exploded in searches and post it right away. Hours with nothing
+# new finish in seconds (no AI, no Facebook calls, nothing installed).
+on:
+  schedule:
+    - cron: '30 2-17 * * *'   # 08:30-23:30 BD (UTC+6)
+  workflow_dispatch:
+
+concurrency:
+  group: fb-page-posting
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  breaking:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Look for a breaking trend
+        id: check
+        env:
+          BREAKING_POSTS: ${{ vars.BREAKING_POSTS }}
+          BREAKING_MIN_SEARCHES: ${{ vars.BREAKING_MIN_SEARCHES }}
+          BREAKING_MAX_PER_DAY: ${{ vars.BREAKING_MAX_PER_DAY }}
+          BREAKING_MIN_GAP_MINUTES: ${{ vars.BREAKING_MIN_GAP_MINUTES }}
+          BREAKING_MAX_AGE_HOURS: ${{ vars.BREAKING_MAX_AGE_HOURS }}
+          MAX_SPORTS_PER_DAY: ${{ vars.MAX_SPORTS_PER_DAY }}
+        run: node scripts/check-breaking.js
+
+      - uses: actions/setup-python@v6
+        if: steps.check.outputs.found == 'true'
+        continue-on-error: true
+        with:
+          python-version: '3.12'
+
+      - name: Install photocard tools
+        if: steps.check.outputs.found == 'true'
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y -qq libfribidi0 >/dev/null 2>&1 || true
+          python3 -m pip install --quiet pillow==12.1.1 || python3 -m pip install --quiet --break-system-packages pillow==12.1.1
+
+      - name: Post the breaking trend
+        if: steps.check.outputs.found == 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          PAGE_NAME: ${{ vars.PAGE_NAME }}
+          TARGET_AUDIENCE: ${{ vars.TARGET_AUDIENCE }}
+          BRAND_HASHTAG: ${{ vars.BRAND_HASHTAG }}
+          EVERGREEN_FALLBACK: ${{ vars.EVERGREEN_FALLBACK }}
+          PHOTOCARDS: ${{ vars.PHOTOCARDS }}
+          NEWS_LINK_COMMENT: ${{ vars.NEWS_LINK_COMMENT }}
+          STORIES: ${{ vars.STORIES }}
+          BREAKING_MAX_PER_DAY: ${{ vars.BREAKING_MAX_PER_DAY }}
+          MAX_SPORTS_PER_DAY: ${{ vars.MAX_SPORTS_PER_DAY }}
+          TOPIC_FEEDS: ${{ vars.TOPIC_FEEDS }}
+          SPECIAL_DAYS: ${{ vars.SPECIAL_DAYS }}
+          POST_LANGUAGE: ${{ vars.POST_LANGUAGE }}
+          AUTO_PUBLISH: ${{ vars.AUTO_PUBLISH }}
+          ALLOW_TREND_PICTURES: ${{ vars.ALLOW_TREND_PICTURES }}
+          BREAKING: 'true'
+          BREAKING_MIN_SEARCHES: ${{ vars.BREAKING_MIN_SEARCHES }}
+          BREAKING_MIN_GAP_MINUTES: ${{ vars.BREAKING_MIN_GAP_MINUTES }}
+          BREAKING_MAX_AGE_HOURS: ${{ vars.BREAKING_MAX_AGE_HOURS }}
+        run: node scripts/post-trend.js
+
+      - name: Save posting log
+        if: steps.check.outputs.found == 'true'
+        run: |
+          git config user.name "fb-bd-trend-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A data/
+          if ! git diff --cached --quiet; then
+            git commit -m "Log breaking post [skip ci]"
+            git pull --rebase --quiet || true
+            git push
+          else
+            echo "Nothing new to save."
+          fi

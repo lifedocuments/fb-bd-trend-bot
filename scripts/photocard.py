@@ -7,6 +7,8 @@ Reads one JSON object on stdin:
    "date_text": "১১ অক্টোবর ২০২৬", "tag": "#SakinMartBD",
    "credit": "Photo: Name / Unsplash", "mood": "normal" | "solemn"}
 
+With "format": "story", writes one finished 1080x1920 image ("out_story")
+for a Facebook Story, with an optional "cta" pill near the bottom.
 With "format": "reel", writes two 1080x1920 layers instead, for a Reel:
   "out_bg" (photo or design background) and "out_overlay" (transparent PNG
   with label, headline and brand), kept inside the area that Facebook's
@@ -215,6 +217,18 @@ def render_reel(cfg):
     if credit and photo_path:
         cf = font('HindSiliguri-SemiBold.ttf', 26)
         d.text((60, 345 + 20), credit, font=cf, fill=(235, 235, 235, 230))
+    cta = clean(cfg.get('cta') or '')
+    if cta:
+        cf2 = font('HindSiliguri-SemiBold.ttf', 40)
+        cw2 = d.textlength(cta, font=cf2)
+        x0 = (RW - cw2 - 80) / 2
+        d.rounded_rectangle([x0, 1540, x0 + cw2 + 80, 1540 + 84], radius=42, fill=(255, 255, 255, 240))
+        d.text((x0 + 40, 1540 + 12), cta, font=cf2, fill=DEEP if not solemn else GREY_DEEP)
+    if cfg.get('out_story'):
+        bg_im = Image.open(cfg['out_bg']).convert('RGBA')
+        Image.alpha_composite(bg_im, ov).convert('RGB').save(cfg['out_story'], 'PNG', optimize=True)
+        print(cfg['out_story'])
+        return
     ov.save(cfg['out_overlay'], 'PNG')
     print(cfg['out_overlay'])
 
@@ -223,7 +237,7 @@ if __name__ == '__main__':
         print('Bangla text shaping (raqm) not available', file=sys.stderr)
         sys.exit(3)
     _cfg = json.load(sys.stdin)
-    if _cfg.get('format') == 'reel':
+    if _cfg.get('format') in ('reel', 'story'):
         render_reel(_cfg)
     else:
         sys.stdin = __import__('io').StringIO(json.dumps(_cfg))

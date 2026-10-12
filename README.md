@@ -222,6 +222,25 @@ them are a substitute for spot-checking it occasionally:
   and post it via the Graph API's `/{page-id}/videos` endpoint instead of
   `/photos`.
 
+## Breaking trends
+
+`.github/workflows/breaking.yml` checks every hour (08:30-23:30 Bangladesh
+time) for a topic that has suddenly reached 100K+ searches and posts it
+right away with an "এখন ট্রেন্ডিং" label. Limits: at most 2 breaking posts a
+day, at least 60 minutes after the previous post, topics from the last 6
+hours only, and the daily sports limit still applies. Hours with nothing
+new finish in seconds. Both posting workflows share a lock, so they never
+post at the same moment. Variables: `BREAKING_POSTS=false` to turn off,
+`BREAKING_MIN_SEARCHES` (default 100000), `BREAKING_MAX_PER_DAY` (2),
+`BREAKING_MIN_GAP_MINUTES` (60), `BREAKING_MAX_AGE_HOURS` (6).
+
+## Facebook Stories
+
+Every live post is also shared to the Page Story as a 9:16 card with a
+"বিস্তারিত দেখুন আমাদের পেজে" note (Stories show at the top of followers'
+feeds for 24 hours). A failed Story never affects the post. `STORIES=false`
+turns it off.
+
 ## Weekly health check
 
 `.github/workflows/health.yml` runs every Monday 10:00 Bangladesh time (or
