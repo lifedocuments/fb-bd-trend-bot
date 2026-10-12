@@ -149,5 +149,52 @@
     "category": "sports",
     "postId": "104979441905402_1160773743128750",
     "headline": "পাকিস্তান ও শ্রীলঙ্কা অনূর্ধ্ব-১৭ ক্রিকেট ম্যাচ ড্র"
+  },
+  {
+    "title": "lottery sambad",
+    "skippedAt": "2026-10-12T15:13:52.603Z",
+    "skipped": true,
+    "reason": "The topic is related to lottery and betting, which violates the policy against gambling or betting content."
+  },
+  {
+    "title": "কুমিল্লা",
+    "skippedAt": "2026-10-12T15:13:53.354Z",
+    "skipped": true,
+    "reason": "The topic is about a murder and crime, which violates safety guidelines for the page."
+  },
+  {
+    "title": "শামা ওবায়েদ",
+    "skippedAt": "2026-10-12T15:13:54.539Z",
+    "skipped": true,
+    "reason": "The topic involves political figures and geopolitical/religious statements which fall under sensitive political discussion."
+  },
+  {
+    "title": "বেক্সিমকো",
+    "skippedAt": "2026-10-12T15:13:55.289Z",
+    "skipped": true,
+    "reason": "The topic involves corporate debt default and business restructuring which leans towards financial and corporate policy issues not entirely aligned with lighthearted family-friendly everyday shopping content."
+  },
+  {
+    "title": "অবসরপ্রাপ্ত লেফটেন্যান্ট কাজী গুলশান আরা",
+    "skippedAt": "2026-10-12T15:13:56.020Z",
+    "skipped": true,
+    "reason": "The topic involves criminal charges, police cases, and remand, which falls under crime and violence according to the skip criteria."
+  },
+  {
+    "title": "নানা পাটেকরের ময়নাতদন্ত প্রতিবেদনে যা জানা গেল",
+    "skippedAt": "2026-10-12T15:13:56.600Z",
+    "skipped": true,
+    "reason": "The topic is about a death and post-mortem report, which falls under the prohibited categories."
+  },
+  {
+    "title": "Bangladeshi breakfast: paratha, bhaji and a cup of tea",
+    "postedAt": "2026-10-12T15:14:31.028Z",
+    "format": "reel",
+    "category": "lifestyle",
+    "postId": "104979441905402_1160874526452005",
+    "slot": 21,
+    "headline": "সকালের নাস্তায় গরম পরোটা আর চা আপনার পছন্দ?",
+    "videoId": "2205915223679287",
+    "evergreen": true
   }
 ]
