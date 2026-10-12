@@ -6,6 +6,7 @@ import { appendFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fetchEngagement } from './lib/facebook.js';
+import { isPaused } from './lib/control.js';
 import { slotFromCron, dhakaDate, slotStats, choosePlan, loadSchedule, saveSchedule } from './lib/schedule.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,11 @@ async function main() {
   if (event !== 'schedule') {
     // Manual run: always post now; Reel only if the "reel" box was ticked.
     await output({ post: true, reel: reelsOn && String(process.env.INPUT_REEL) === 'true', slot: '' });
+    return;
+  }
+  if (await isPaused()) {
+    console.log('[check-slot] Bot is paused from Telegram (/resume to restart). Not posting.');
+    await output({ post: false, reel: false, slot: '' });
     return;
   }
   const slot = slotFromCron(process.env.EVENT_SCHEDULE);

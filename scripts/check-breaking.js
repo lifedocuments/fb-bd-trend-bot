@@ -8,6 +8,7 @@ import { fetchBdTrends } from './lib/trends.js';
 import { filterSafeTrends } from './lib/safety.js';
 import { findBreaking } from './lib/breaking.js';
 import { breakingOptions } from './lib/breaking-config.js';
+import { isPaused } from './lib/control.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 async function out(found) {
@@ -15,6 +16,7 @@ async function out(found) {
 }
 async function main() {
   if (String(process.env.BREAKING_POSTS).toLowerCase() === 'false') { console.log('[breaking] Turned off (BREAKING_POSTS=false).'); return out(false); }
+  if (await isPaused()) { console.log('[breaking] Bot is paused from Telegram.'); return out(false); }
   let posted = [];
   try { posted = JSON.parse(await readFile(path.join(HERE, '..', 'data', 'posted.json'), 'utf8')); } catch {}
   const trends = filterSafeTrends(await fetchBdTrends());

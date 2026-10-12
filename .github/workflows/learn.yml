@@ -1,0 +1,55 @@
+name: Weekly learning
+
+# Sunday 23:00 Bangladesh time: measure the last 30 days of posts, let the AI
+# learn what works on this Page, save the lessons for future posts
+# (data/learnings.json) and write a report (reports/latest.md + Telegram).
+on:
+  schedule:
+    - cron: '0 17 * * 0'   # Sunday 17:00 UTC = 23:00 BD
+  workflow_dispatch:
+
+concurrency:
+  group: fb-page-posting
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Learn from recent posts
+        env:
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL }}
+          PAGE_NAME: ${{ vars.PAGE_NAME }}
+          LEARN_MIN_POSTS: ${{ vars.LEARN_MIN_POSTS }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node scripts/learn.js
+
+      - name: Save lessons and report
+        if: always()
+        run: |
+          git config user.name "fb-bd-trend-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A data/ reports/ 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "Weekly learning report [skip ci]"
+            git pull --rebase --quiet || true
+            git push
+          else
+            echo "Nothing new to save."
+          fi

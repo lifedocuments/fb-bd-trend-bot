@@ -28,4 +28,6 @@ jobs:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           HEALTH_MIN_POSTS: ${{ vars.HEALTH_MIN_POSTS }}
           HEALTH_MAX_HOURS: ${{ vars.HEALTH_MAX_HOURS }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: node scripts/health-check.js

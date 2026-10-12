@@ -192,7 +192,7 @@ export function finalizeHashtags(caption, brandHashtag = '#SakinMartBD', maxTopi
 // Decides whether a trend suits the Page, and if so writes the post and an
 // image search phrase — all in one AI call to stay well inside free limits.
 // Returns { skip: true, reason } or { skip: false, caption, imageQuery }.
-export async function writeTrendPost({ trend, language = 'bn', pageName, audience, evergreen = false, special = null, brandHashtag = '#SakinMartBD' }) {
+export async function writeTrendPost({ trend, language = 'bn', pageName, audience, evergreen = false, special = null, brandHashtag = '#SakinMartBD', learnedTips = [] }) {
   const langInstruction = LANGUAGE_INSTRUCTIONS[language] || LANGUAGE_INSTRUCTIONS.bn;
   const who = audience || 'Bangladeshi adults aged 20-50';
   const system = [
@@ -211,7 +211,10 @@ export async function writeTrendPost({ trend, language = 'bn', pageName, audienc
     'Format: 2-4 short sentences including the closing question, then exactly 2 relevant hashtags on a new line (the Page\'s brand hashtag is added automatically). No markdown, no asterisks, 2-4 emoji max, no quotation marks around the post.',
     'STEP 3 - image: give a short, general ENGLISH stock-photo search phrase (2-4 words) that visually fits the post, e.g. "cricket stadium crowd", "electric car", "Dhaka street food". Never a person\'s name or a brand logo.',
     'STEP 4 - headline for the photocard image: one short line in the post\'s language, at most 9 words, no emoji, no hashtags, same fact rules as the post. It should make people stop scrolling and read.',
-    'Reply with ONLY a JSON object, no other text: {"skip": boolean, "reason": string, "caption": string, "image_query": string, "headline": string}. When skipping, the other fields may be empty strings.'
+    'Reply with ONLY a JSON object, no other text: {"skip": boolean, "reason": string, "caption": string, "image_query": string, "headline": string}. When skipping, the other fields may be empty strings.',
+    ...(learnedTips.length
+      ? ['LESSONS FROM THIS PAGE\'S OWN RESULTS (follow them, unless one conflicts with any rule above — the rules above always win):', ...learnedTips.map((t) => '- ' + t)]
+      : [])
   ].join('\n');
 
   const solemn = special?.mood === 'solemn';
@@ -272,6 +275,22 @@ export async function classifyTopics(items) {
     console.warn('[ai] Topic classification failed, using keyword guesses:', e.message);
     return null;
   }
+}
+
+// Weekly learning: turns the Page's own performance numbers into a few
+// style lessons for the post writer, plus a short Bangla summary for you.
+export async function analyzePerformance(stats, pageName) {
+  const system = [
+    `You are the social media analyst for the Bangladeshi Facebook Page "${pageName}".`,
+    'You get engagement data for its recent posts (score = reactions + 2x comments + 3x shares).',
+    'Return ONLY JSON: {"insights_bn": [3-5 short Bangla bullet sentences for the Page owner explaining what worked and what did not],',
+    ' "tips": [up to 6 short English instructions for the AI that writes the posts — about headline style, angle, tone, length, kind of closing question],',
+    ' "category_weights": {category: number between 0.5 and 1.5 — above 1 for categories that do better than average}}.',
+    'Base everything ONLY on the data. Tips must be about writing style and topic angle. Never suggest politics, religion, inventing facts,',
+    'clickbait lies, or asking people to like/share/tag. If the data is too thin to tell, say so and keep weights near 1.'
+  ].join('\n');
+  const raw = await callLLM({ system, user: JSON.stringify(stats), maxTokens: 900, json: true });
+  return parseJsonReply(raw);
 }
 
 export async function writePageAbout({ pageName, recentTopics = [], language = 'bn' }) {

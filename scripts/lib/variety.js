@@ -25,7 +25,7 @@ export function dhakaDay(d) {
 
 // pool: [{ title, category, origin: 'trend'|'news', ... }] in source order.
 // Returns { ordered, todayCounts, lastCategory, droppedSports }.
-export function orderForVariety(pool, posted, { maxSportsPerDay = 1, now = new Date(), limit = 6 } = {}) {
+export function orderForVariety(pool, posted, { maxSportsPerDay = 1, now = new Date(), limit = 6, categoryWeights = {} } = {}) {
   const today = dhakaDay(now);
   const real = posted.filter((p) => !p.skipped && !p.dryRun && p.postedAt && !Number.isNaN(new Date(p.postedAt).getTime()));
   const todayCounts = {};
@@ -41,6 +41,7 @@ export function orderForVariety(pool, posted, { maxSportsPerDay = 1, now = new D
     .sort((a, b) =>
       (a.c.category === lastCategory) - (b.c.category === lastCategory) ||
       (todayCounts[a.c.category] || 0) - (todayCounts[b.c.category] || 0) ||
+      (categoryWeights[b.c.category] ?? 1) - (categoryWeights[a.c.category] ?? 1) ||
       (a.c.origin === 'trend' ? 0 : 1) - (b.c.origin === 'trend' ? 0 : 1) ||
       a.i - b.i)
     .map(({ c }) => c)

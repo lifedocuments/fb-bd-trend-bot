@@ -222,6 +222,35 @@ them are a substitute for spot-checking it occasionally:
   and post it via the Graph API's `/{page-id}/videos` endpoint instead of
   `/photos`.
 
+## The brain (weekly learning)
+
+`.github/workflows/learn.yml` runs every Sunday 23:00 Bangladesh time. It
+measures the last 30 days of posts (reactions + 2x comments + 3x shares), and
+once at least 10 posts have data, the AI writes a few style lessons ("short
+headlines work", "personal questions get more comments") and category
+weights. Every new post follows those lessons, and topic choice leans toward
+categories that perform better — the safety rules, fact rules and variety
+rules always come first, tips about politics/religion or asking for
+likes/shares are thrown away, and lessons older than 30 days are ignored.
+The report is saved to `reports/latest.md` (plus a dated copy) and sent to
+Telegram. Variable: `LEARN_MIN_POSTS` (default 10).
+
+## Telegram control bot (optional)
+
+1. In Telegram, open **@BotFather**, send `/newbot`, pick a name and a
+   username ending in `bot`. Copy the token it gives you.
+2. Open your new bot and send it `/start`.
+3. In a browser open `https://api.telegram.org/bot<TOKEN>/getUpdates`
+   (your token in place of `<TOKEN>`) and find `"chat":{"id":123456789` —
+   that number is your chat id.
+4. Add two repository **secrets**: `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`.
+
+You then get a message for every post (with link), breaking posts, failed
+runs, the weekly health check and the weekly report. Commands (picked up
+within about an hour, 08:30-23:30 BD): `/status`, `/pause`, `/resume`,
+`/postnow`, `/reel`, `/report`, `/help`. Only your chat id is obeyed;
+messages from anyone else are ignored.
+
 ## Breaking trends
 
 `.github/workflows/breaking.yml` checks every hour (08:30-23:30 Bangladesh

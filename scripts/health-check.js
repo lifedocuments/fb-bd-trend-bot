@@ -2,6 +2,7 @@
 // Facebook token stopped working or posts stopped going out. Also writes a
 // short weekly summary to the run's Summary page.
 import { readFile, appendFile } from 'node:fs/promises';
+import { notify } from './lib/telegram.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -105,6 +106,12 @@ async function main() {
   const md = summaryMarkdown(week);
   if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, md);
   const failed = results.filter((r) => r.status === 'fail');
+  const icon = { ok: '✅', warn: '⚠️', fail: '❌' };
+  await notify([
+    failed.length ? '🚨 সাপ্তাহিক হেলথ চেক: সমস্যা পাওয়া গেছে' : '🩺 সাপ্তাহিক হেলথ চেক: সব ঠিক আছে',
+    ...results.map((r) => `${icon[r.status]} ${r.name}${r.status === 'ok' ? '' : ': ' + r.detail.slice(0, 200)}`),
+    week ? `গত ৭ দিনে পোস্ট: ${week.total}` : ''
+  ].filter(Boolean).join('\n'));
   if (failed.length) {
     console.error(`[health] ${failed.length} problem(s) found: ${failed.map((f) => f.name).join(', ')}. GitHub will email you about this failed run.`);
     process.exitCode = 1;

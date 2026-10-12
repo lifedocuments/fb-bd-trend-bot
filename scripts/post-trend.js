@@ -19,6 +19,8 @@ import { makePhotocard } from './lib/photocard.js';
 import { pickImageForTrend } from './lib/image.js';
 import { postPhotoToPage, postTextToPage, commentOnPost, postReelToPage, postStoryToPage } from './lib/facebook.js';
 import { makeStoryImage } from './lib/story.js';
+import { loadLearnings } from './lib/brain.js';
+import { notify, postLink } from './lib/telegram.js';
 import { findBreaking } from './lib/breaking.js';
 import { breakingOptions } from './lib/breaking-config.js';
 import { makeReel } from './lib/reel.js';
@@ -117,6 +119,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
   console.log(`[post-trend] DRY_RUN=${DRY_RUN} AUTO_PUBLISH=${AUTO_PUBLISH} LANGUAGE=${LANGUAGE}`);
+  const learnings = await loadLearnings();
+  if (learnings.tips.length || Object.keys(learnings.weights).length) {
+    console.log(`[post-trend] Using ${learnings.tips.length} learned writing lesson(s) and category weights ${JSON.stringify(learnings.weights)}.`);
+  }
 
   const allTrends = await fetchBdTrends();
   console.log(`[post-trend] Fetched ${allTrends.length} trends from Google Trends BD.`);
@@ -176,7 +182,7 @@ async function main() {
       newsPool = filterSafeTrends(news).filter((t) => !postedTitles.has(normalizeTitle(t.title)));
       console.log(`[post-trend] ${newsPool.length} fresh stories from Google News sections (${TOPIC_FEEDS.join(', ')}).`);
     }
-    const { ordered, todayCounts, lastCategory, droppedSports } = orderForVariety([...trendPool, ...newsPool], posted, { maxSportsPerDay: MAX_SPORTS_PER_DAY });
+    const { ordered, todayCounts, lastCategory, droppedSports } = orderForVariety([...trendPool, ...newsPool], posted, { maxSportsPerDay: MAX_SPORTS_PER_DAY, categoryWeights: learnings.weights });
     console.log(`[post-trend] Variety: today so far ${JSON.stringify(todayCounts)}, last post was "${lastCategory || 'none'}"${droppedSports ? `, holding back ${droppedSports} sports topic(s) (daily limit ${MAX_SPORTS_PER_DAY})` : ''}.`);
     candidates.push(...ordered.map((t) => ({ trend: t, evergreen: false })));
     if (EVERGREEN_ON) {
@@ -201,7 +207,7 @@ async function main() {
       caption = `[DRY RUN] Would write a ${LANGUAGE} caption about: ${trend.title}`;
     } else {
       const post = await writeTrendPost({
-        trend, evergreen, special: sp, language: LANGUAGE, pageName: PAGE_NAME, audience: AUDIENCE, brandHashtag: BRAND_HASHTAG
+        trend, evergreen, special: sp, language: LANGUAGE, pageName: PAGE_NAME, audience: AUDIENCE, brandHashtag: BRAND_HASHTAG, learnedTips: learnings.tips
       });
       if (post.skip) {
         console.log(`[post-trend] Skipping "${trend.title}": ${post.reason}. Trying next candidate.`);
@@ -325,17 +331,26 @@ async function main() {
     if (postId && AUTO_PUBLISH) entry.postId = postId;
     if (SLOT_HOUR) entry.slot = SLOT_HOUR;
     if (breaking) entry.breaking = true;
+    if (headline) entry.headline = headline;
+    if (format === 'reel' && result.video_id) entry.videoId = String(result.video_id);
     if (evergreen) entry.evergreen = true;
     if (sp) entry.special = sp.key;
     posted.push(entry);
     await savePostedLog(posted);
+    const kindLabel = format === 'reel' ? 'রিল' : 'পোস্ট';
+    const tags = [breaking ? 'ব্রেকিং' : '', sp ? 'বিশেষ দিন' : '', entry.category, SLOT_HOUR ? `${SLOT_HOUR}:00` : ''].filter(Boolean).join(' · ');
+    await notify(AUTO_PUBLISH
+      ? `✅ নতুন ${kindLabel} প্রকাশিত (${tags})\n${headline || trend.title}\n${postLink({ format, postId: entry.postId, videoId: entry.videoId, pageId })}`
+      : `📝 ড্রাফট সেভ হয়েছে (${tags})\n${headline || trend.title}\nMeta Business Suite → Drafts`);
     return;
   }
 
   console.log('[post-trend] None of the candidates suited the Page this run. Nothing posted; the next scheduled run will try again.');
 }
 
-main().catch((err) => {
-  console.error('[post-trend] FAILED:', err.message + (err.cause ? ' (cause: ' + (err.cause.message || err.cause) + ')' : ''));
+main().catch(async (err) => {
+  const msg = err.message + (err.cause ? ' (cause: ' + (err.cause.message || err.cause) + ')' : '');
+  console.error('[post-trend] FAILED:', msg);
   process.exitCode = 1;
+  if (!DRY_RUN) await notify(`❌ পোস্ট করা যায়নি${BREAKING ? ' (ব্রেকিং)' : ''}:\n${msg.slice(0, 500)}\nGitHub → Actions-এ লগ দেখুন।`);
 });
