@@ -222,6 +222,16 @@ them are a substitute for spot-checking it occasionally:
   and post it via the Graph API's `/{page-id}/videos` endpoint instead of
   `/photos`.
 
+## Weekly health check
+
+`.github/workflows/health.yml` runs every Monday 10:00 Bangladesh time (or
+manually: Actions -> Weekly health check -> Run workflow). It checks that
+the Facebook Page token still works, that posts went out recently (last
+post within 36h, at least 7 in the week), and that the Gemini and Unsplash
+keys are accepted. If something critical is wrong the run fails and GitHub
+emails you; the run's Summary page shows a table plus last week's posts by
+category and format. Variables: `HEALTH_MIN_POSTS`, `HEALTH_MAX_HOURS`.
+
 ## Topic variety
 
 Google Trends in Bangladesh is mostly cricket, so the bot also reads Google

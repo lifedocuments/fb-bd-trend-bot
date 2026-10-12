@@ -1,0 +1,31 @@
+name: Weekly health check
+
+on:
+  schedule:
+    # Mondays 10:00 Bangladesh time (04:00 UTC).
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Check tokens, keys and recent posting
+        env:
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          HEALTH_MIN_POSTS: ${{ vars.HEALTH_MIN_POSTS }}
+          HEALTH_MAX_HOURS: ${{ vars.HEALTH_MAX_HOURS }}
+        run: node scripts/health-check.js
