@@ -55,6 +55,56 @@ function normalizeTitle(title) {
   return title.trim().toLowerCase();
 }
 
+// Facebook returns post ids in different shapes: photo posts give
+// "PAGEID_POSTID", Reels give a bare "POSTID" (which the API rejects as a
+// legacy "status" object). Build the full id, and for Reels also try the
+// video id itself.
+function commentTargets(result, pageId, format) {
+  const targets = [];
+  if (result.post_id) {
+    const pid = String(result.post_id);
+    targets.push(pid.includes('_') ? pid : `${pageId}_${pid}`);
+  }
+  if (format === 'reel' && result.video_id) targets.push(String(result.video_id));
+  if (!targets.length && result.id) targets.push(String(result.id));
+  return [...new Set(targets)];
+}
+
+async function addNewsComment({ result, pageId, format, message, newsUrl }) {
+  const targets = commentTargets(result, pageId, format);
+  // A new Reel is still processing on Facebook's side for a while, so retry.
+  const attempts = format === 'reel' ? 4 : 2;
+  const firstWait = format === 'reel' ? Number(process.env.REEL_COMMENT_DELAY_MS ?? 20000) : 0;
+  const retryWait = Number(process.env.COMMENT_RETRY_MS ?? 30000);
+  if (firstWait) await sleep(firstWait);
+  let lastErr;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    for (const objectId of targets) {
+      try {
+        await commentOnPost({ objectId, message });
+        console.log(`[post-trend] Added news-link comment on ${objectId}: ${newsUrl}`);
+        return true;
+      } catch (e) {
+        lastErr = e;
+        if (/\(#200\)|\(#10\)|code 200,|code 10,/i.test(e.message)) {
+          console.warn(`[post-trend] Could not add the news-link comment: ${e.message}`);
+          console.warn('[post-trend] The Page token needs the pages_manage_engagement permission. See README "News-link comments".');
+          return false;
+        }
+      }
+    }
+    if (attempt < attempts) {
+      console.log(`[post-trend] Comment not accepted yet (${lastErr?.message?.slice(0, 90)}…). Retrying in ${Math.round(retryWait / 1000)}s.`);
+      await sleep(retryWait);
+    }
+  }
+  // The post is already live, so never fail the run over the comment.
+  console.warn(`[post-trend] Could not add the news-link comment: ${lastErr?.message}`);
+  return false;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function main() {
   console.log(`[post-trend] DRY_RUN=${DRY_RUN} AUTO_PUBLISH=${AUTO_PUBLISH} LANGUAGE=${LANGUAGE}`);
 
@@ -195,21 +245,9 @@ async function main() {
     }
     console.log('[post-trend] Facebook API response:', JSON.stringify(result));
     if (willComment) {
-      const target = result.post_id || result.id;
-      // A new Reel needs a moment on Facebook's side before it accepts comments.
-      if (format === 'reel') await new Promise((r) => setTimeout(r, Number(process.env.REEL_COMMENT_DELAY_MS ?? 20000)));
       const source = trend.newsSource ? ` (${trend.newsSource})` : '';
       const message = `📰 বিস্তারিত পড়ুন${source}:\n${trend.newsTitle ? trend.newsTitle + '\n' : ''}${newsUrl}`;
-      try {
-        await commentOnPost({ objectId: target, message });
-        console.log(`[post-trend] Added news-link comment: ${newsUrl}`);
-      } catch (e) {
-        // The post is already live, so never fail the run over the comment.
-        console.warn(`[post-trend] Could not add the news-link comment: ${e.message}`);
-        if (/permission|\(#200\)|\(#10\)|code 200|code 10\b/i.test(e.message)) {
-          console.warn('[post-trend] The Page token needs the pages_manage_engagement permission. See README "News-link comments".');
-        }
-      }
+      await addNewsComment({ result, pageId, format, message, newsUrl });
     } else if (NEWS_COMMENT_ON && kind === 'trend' && newsUrl && !AUTO_PUBLISH) {
       console.log(`[post-trend] Draft mode: no comment added. News link for reference: ${newsUrl}`);
     }
@@ -218,7 +256,7 @@ async function main() {
       : '[post-trend] Saved as an unpublished draft — review and publish it from Meta Business Suite, or set AUTO_PUBLISH=true once you trust the pipeline.');
 
     const entry = { title: trend.title, postedAt: new Date().toISOString(), format };
-    const postId = result.post_id || result.id;
+    const postId = commentTargets(result, pageId, format)[0];
     if (postId && AUTO_PUBLISH) entry.postId = postId;
     if (SLOT_HOUR) entry.slot = SLOT_HOUR;
     if (evergreen) entry.evergreen = true;
