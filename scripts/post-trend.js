@@ -9,9 +9,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchBdTrends } from './lib/trends.js';
+import { fetchBdTrends, fetchTopicNews } from './lib/trends.js';
+import { orderForVariety, guessCategory } from './lib/variety.js';
 import { filterSafeTrends } from './lib/safety.js';
-import { writeTrendPost } from './lib/claude.js';
+import { writeTrendPost, classifyTopics } from './lib/claude.js';
 import { EVERGREEN_TOPICS } from './lib/evergreen.js';
 import { specialDayFor } from './lib/special-days.js';
 import { makePhotocard } from './lib/photocard.js';
@@ -30,6 +31,10 @@ const LANGUAGE = process.env.POST_LANGUAGE || 'bn';
 const PAGE_NAME = process.env.PAGE_NAME || 'our Page';
 const AUDIENCE = process.env.TARGET_AUDIENCE || 'Bangladeshi adults aged 20-50';
 const BRAND_HASHTAG = process.env.BRAND_HASHTAG || '#SakinMartBD';
+const MAX_SPORTS_PER_DAY = process.env.MAX_SPORTS_PER_DAY ? Number(process.env.MAX_SPORTS_PER_DAY) : 1;
+const TOPIC_FEEDS = /^none$/i.test(process.env.TOPIC_FEEDS || '')
+  ? []
+  : (process.env.TOPIC_FEEDS || 'ENTERTAINMENT,TECHNOLOGY,BUSINESS').toUpperCase().split(/[\s,]+/).filter(Boolean);
 const MAKE_REEL = String(process.env.MAKE_REEL).toLowerCase() === 'true';
 const SLOT_HOUR = Number(process.env.SLOT_HOUR) || null;
 const NEWS_COMMENT_ON = String(process.env.NEWS_LINK_COMMENT ?? 'true').toLowerCase() !== 'false';
@@ -129,7 +134,21 @@ async function main() {
     console.log(`[post-trend] Today is a special day: ${special.name}.`);
     candidates.push({ trend: { title: special.name, context: '' }, special });
   }
-  candidates.push(...freshTrends.slice(0, 5).map((t) => ({ trend: t, evergreen: false })));
+  // Sort trends into categories (one cheap AI call; keyword guess as backup),
+  // add non-sports news sections, then order everything for variety.
+  const topTrends = freshTrends.slice(0, 10);
+  const classifyOn = String(process.env.CLASSIFY_TOPICS ?? 'true').toLowerCase() !== 'false';
+  const cats = DRY_RUN || !classifyOn ? null : await classifyTopics(topTrends);
+  const trendPool = topTrends.map((t, i) => ({ ...t, origin: 'trend', category: cats?.[i] || guessCategory(`${t.title} ${t.context}`) }));
+  let newsPool = [];
+  if (TOPIC_FEEDS.length) {
+    const news = await fetchTopicNews(TOPIC_FEEDS);
+    newsPool = filterSafeTrends(news).filter((t) => !postedTitles.has(normalizeTitle(t.title)));
+    console.log(`[post-trend] ${newsPool.length} fresh stories from Google News sections (${TOPIC_FEEDS.join(', ')}).`);
+  }
+  const { ordered, todayCounts, lastCategory, droppedSports } = orderForVariety([...trendPool, ...newsPool], posted, { maxSportsPerDay: MAX_SPORTS_PER_DAY });
+  console.log(`[post-trend] Variety: today so far ${JSON.stringify(todayCounts)}, last post was "${lastCategory || 'none'}"${droppedSports ? `, holding back ${droppedSports} sports topic(s) (daily limit ${MAX_SPORTS_PER_DAY})` : ''}.`);
+  candidates.push(...ordered.map((t) => ({ trend: t, evergreen: false })));
   if (EVERGREEN_ON) {
     const recentEvergreen = new Set(posted.filter((p) => p.evergreen).slice(-(EVERGREEN_TOPICS.length - 1)).map((p) => p.title));
     const nextTopics = EVERGREEN_TOPICS.filter((t) => !recentEvergreen.has(t)).slice(0, 2);
@@ -142,7 +161,7 @@ async function main() {
 
   for (const { trend, evergreen = false, special: sp = null } of candidates) {
     const kind = sp ? 'special' : evergreen ? 'evergreen' : 'trend';
-    console.log(`[post-trend] Trying ${sp ? 'special day' : evergreen ? 'evergreen topic' : 'trend'}: "${trend.title}"`);
+    console.log(`[post-trend] Trying ${sp ? 'special day' : evergreen ? 'evergreen topic' : trend.origin === 'news' ? 'news story' : 'trend'}: "${trend.title}"${trend.category ? ` [${trend.category}]` : ''}`);
 
     let caption;
     let imageQuery = '';
@@ -255,7 +274,10 @@ async function main() {
       ? '[post-trend] Published live to the Page.'
       : '[post-trend] Saved as an unpublished draft — review and publish it from Meta Business Suite, or set AUTO_PUBLISH=true once you trust the pipeline.');
 
-    const entry = { title: trend.title, postedAt: new Date().toISOString(), format };
+    const entry = {
+      title: trend.title, postedAt: new Date().toISOString(), format,
+      category: sp ? 'culture' : evergreen ? 'lifestyle' : (trend.category || 'news')
+    };
     const postId = commentTargets(result, pageId, format)[0];
     if (postId && AUTO_PUBLISH) entry.postId = postId;
     if (SLOT_HOUR) entry.slot = SLOT_HOUR;

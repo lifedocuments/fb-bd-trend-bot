@@ -222,6 +222,16 @@ them are a substitute for spot-checking it occasionally:
   and post it via the Graph API's `/{page-id}/videos` endpoint instead of
   `/photos`.
 
+## Topic variety
+
+Google Trends in Bangladesh is mostly cricket, so the bot also reads Google
+News Bangladesh's Entertainment, Technology and Business sections (in
+Bangla), sorts every topic into a category, and then: allows at most 1
+sports post a day, avoids the same category twice in a row, and prefers the
+category posted least today. Variables: `MAX_SPORTS_PER_DAY` (default 1),
+`TOPIC_FEEDS` (default `ENTERTAINMENT,TECHNOLOGY,BUSINESS`; also `SCIENCE`,
+`WORLD`; `none` to use Google Trends only).
+
 ## Smart timing
 
 Every post records its time slot and Facebook post id. Once a day the

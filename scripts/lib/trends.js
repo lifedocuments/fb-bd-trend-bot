@@ -90,3 +90,50 @@ export async function fetchBdTrends() {
 
   return trends;
 }
+
+// Extra, non-sports topics: Google News Bangladesh section feeds (Bangla).
+// These give the Page entertainment / tech / business stories so it isn't
+// all cricket. Each item already knows its category.
+const NEWS_SECTIONS = {
+  ENTERTAINMENT: 'entertainment',
+  TECHNOLOGY: 'tech',
+  BUSINESS: 'business',
+  SCIENCE: 'tech',
+  WORLD: 'news',
+  NATION: 'news'
+};
+
+export async function fetchTopicNews(sections, { maxAgeHours = 24, perSection = 4 } = {}) {
+  const out = [];
+  for (const sec of sections) {
+    const category = NEWS_SECTIONS[sec];
+    if (!category) continue;
+    const url = `https://news.google.com/rss/headlines/section/topic/${sec}?hl=bn&gl=BD&ceid=BD:bn`;
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; fb-bd-trend-bot/1.0)' } });
+      if (!res.ok) { console.warn(`[trends] Google News ${sec} returned HTTP ${res.status}`); continue; }
+      const xml = await res.text();
+      let n = 0;
+      for (const chunk of splitItems(xml)) {
+        if (n >= perSection) break;
+        const raw = extractAll(chunk, 'title')[0] || '';
+        const link = extractAll(chunk, 'link')[0] || '';
+        const source = (chunk.match(/<source[^>]*>([\s\S]*?)<\/source>/) || [])[1] || '';
+        const pub = extractAll(chunk, 'pubDate')[0] || '';
+        if (pub && Date.now() - new Date(pub).getTime() > maxAgeHours * 3600000) continue;
+        const src = decodeXmlEntities(source.trim());
+        const headline = src && raw.endsWith(' - ' + src) ? raw.slice(0, -(src.length + 3)).trim() : raw.replace(/\s+-\s+[^-]+$/, '').trim();
+        if (!headline) continue;
+        out.push({
+          title: headline, traffic: '', picture: '', context: headline,
+          newsUrl: link, newsTitle: headline, newsSource: src,
+          category, origin: 'news'
+        });
+        n++;
+      }
+    } catch (e) {
+      console.warn(`[trends] Could not load Google News ${sec}: ${e.message}`);
+    }
+  }
+  return out;
+}

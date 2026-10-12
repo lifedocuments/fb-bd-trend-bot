@@ -253,6 +253,27 @@ export async function writeTrendPost({ trend, language = 'bn', pageName, audienc
   return { skip: false, caption, imageQuery, headline };
 }
 
+// One cheap AI call that sorts trending topics into categories, so the bot
+// can keep the Page varied. Returns an array of categories (same order), or
+// null if the AI isn't available (caller then uses keyword guesses).
+export async function classifyTopics(items) {
+  if (!items.length) return [];
+  const cats = 'sports, entertainment, tech, business, lifestyle, culture, news, other';
+  const system = `You label Bangladeshi trending search topics with ONE category each from: ${cats}. "sports" includes cricket and football players, teams and matches. Reply with ONLY JSON: {"categories": ["...", ...]} in the same order as the input.`;
+  const user = items.map((t, i) => `${i + 1}. ${t.title}${t.context ? ' — ' + t.context.slice(0, 160) : ''}`).join('\n');
+  try {
+    const raw = await callLLM({ system, user, maxTokens: 300, json: true });
+    const data = parseJsonReply(raw);
+    const list = Array.isArray(data.categories) ? data.categories : [];
+    if (list.length !== items.length) return null;
+    const ok = new Set(cats.split(', '));
+    return list.map((c) => (ok.has(String(c).toLowerCase()) ? String(c).toLowerCase() : 'other'));
+  } catch (e) {
+    console.warn('[ai] Topic classification failed, using keyword guesses:', e.message);
+    return null;
+  }
+}
+
 export async function writePageAbout({ pageName, recentTopics = [], language = 'bn' }) {
   const langInstruction = LANGUAGE_INSTRUCTIONS[language] || LANGUAGE_INSTRUCTIONS.bn;
   const system = [
