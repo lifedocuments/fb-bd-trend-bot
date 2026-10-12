@@ -16,7 +16,8 @@ import { EVERGREEN_TOPICS } from './lib/evergreen.js';
 import { specialDayFor } from './lib/special-days.js';
 import { makePhotocard } from './lib/photocard.js';
 import { pickImageForTrend } from './lib/image.js';
-import { postPhotoToPage, postTextToPage, commentOnPost } from './lib/facebook.js';
+import { postPhotoToPage, postTextToPage, commentOnPost, postReelToPage } from './lib/facebook.js';
+import { makeReel } from './lib/reel.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOG_PATH = path.join(__dirname, '..', 'data', 'posted.json');
@@ -29,6 +30,8 @@ const LANGUAGE = process.env.POST_LANGUAGE || 'bn';
 const PAGE_NAME = process.env.PAGE_NAME || 'our Page';
 const AUDIENCE = process.env.TARGET_AUDIENCE || 'Bangladeshi adults aged 20-50';
 const BRAND_HASHTAG = process.env.BRAND_HASHTAG || '#SakinMartBD';
+const MAKE_REEL = String(process.env.MAKE_REEL).toLowerCase() === 'true';
+const SLOT_HOUR = Number(process.env.SLOT_HOUR) || null;
 const NEWS_COMMENT_ON = String(process.env.NEWS_LINK_COMMENT ?? 'true').toLowerCase() !== 'false';
 const PHOTOCARDS_ON = String(process.env.PHOTOCARDS ?? 'true').toLowerCase() !== 'false';
 const SPECIAL_DAYS_ON = String(process.env.SPECIAL_DAYS ?? 'true').toLowerCase() !== 'false';
@@ -117,6 +120,8 @@ async function main() {
 
     let imageUrl = null;
     let cardPath = null;
+    let reelPath = null;
+    let visual = null;
     if (DRY_RUN) {
       imageUrl = '[DRY RUN would search Unsplash]';
     } else {
@@ -125,16 +130,20 @@ async function main() {
         imageUrl = image.url;
         if (image.credit) caption = `${caption}\n\n${image.credit}`;
       }
-      if (PHOTOCARDS_ON) {
-        cardPath = await makePhotocard({
-          imageUrl,
-          headline,
-          label: sp ? 'বিশেষ দিন' : evergreen ? 'আলাপ' : 'ট্রেন্ডিং',
-          credit: image?.cardCredit || '',
-          pageName: PAGE_NAME,
-          tag: BRAND_HASHTAG.startsWith('#') ? BRAND_HASHTAG : '#' + BRAND_HASHTAG,
-          mood: sp?.mood === 'solemn' ? 'solemn' : 'normal'
-        });
+      visual = {
+        imageUrl,
+        headline,
+        label: sp ? 'বিশেষ দিন' : evergreen ? 'আলাপ' : 'ট্রেন্ডিং',
+        credit: image?.cardCredit || '',
+        pageName: PAGE_NAME,
+        mood: sp?.mood === 'solemn' ? 'solemn' : 'normal'
+      };
+      if (MAKE_REEL) {
+        reelPath = await makeReel(visual);
+        console.log(reelPath ? `[post-trend] Reel ready (headline: "${headline}").` : '[post-trend] Reel could not be built — will post a photocard instead.');
+      }
+      if (!reelPath && PHOTOCARDS_ON) {
+        cardPath = await makePhotocard({ ...visual, tag: BRAND_HASHTAG.startsWith('#') ? BRAND_HASHTAG : '#' + BRAND_HASHTAG });
         console.log(cardPath ? `[post-trend] Photocard ready (headline: "${headline}").` : '[post-trend] No photocard this time.');
       }
     }
@@ -160,17 +169,35 @@ async function main() {
         : `${caption}\n\n${pointer}`;
     }
     let result;
-    if (cardPath) {
+    let format = 'photo';
+    if (reelPath) {
+      try {
+        result = await postReelToPage({ pageId, filePath: reelPath, description: caption, publish: AUTO_PUBLISH });
+        format = 'reel';
+        console.log('[post-trend] Posted as a Reel.');
+      } catch (e) {
+        console.warn(`[post-trend] Reel upload failed (${e.message}) — posting a photocard instead.`);
+        if (PHOTOCARDS_ON && visual) {
+          cardPath = await makePhotocard({ ...visual, tag: BRAND_HASHTAG.startsWith('#') ? BRAND_HASHTAG : '#' + BRAND_HASHTAG });
+        }
+      }
+    }
+    if (result) {
+      // already posted as a Reel
+    } else if (cardPath) {
       result = await postPhotoToPage({ pageId, filePath: cardPath, caption, publish: AUTO_PUBLISH });
     } else if (imageUrl && /^https?:\/\//.test(imageUrl)) {
       result = await postPhotoToPage({ pageId, imageUrl, caption, publish: AUTO_PUBLISH });
     } else {
       console.warn('[post-trend] No image found — posting text-only.');
       result = await postTextToPage({ pageId, message: caption, publish: AUTO_PUBLISH });
+      format = 'text';
     }
     console.log('[post-trend] Facebook API response:', JSON.stringify(result));
     if (willComment) {
       const target = result.post_id || result.id;
+      // A new Reel needs a moment on Facebook's side before it accepts comments.
+      if (format === 'reel') await new Promise((r) => setTimeout(r, Number(process.env.REEL_COMMENT_DELAY_MS ?? 20000)));
       const source = trend.newsSource ? ` (${trend.newsSource})` : '';
       const message = `📰 বিস্তারিত পড়ুন${source}:\n${trend.newsTitle ? trend.newsTitle + '\n' : ''}${newsUrl}`;
       try {
@@ -190,7 +217,10 @@ async function main() {
       ? '[post-trend] Published live to the Page.'
       : '[post-trend] Saved as an unpublished draft — review and publish it from Meta Business Suite, or set AUTO_PUBLISH=true once you trust the pipeline.');
 
-    const entry = { title: trend.title, postedAt: new Date().toISOString() };
+    const entry = { title: trend.title, postedAt: new Date().toISOString(), format };
+    const postId = result.post_id || result.id;
+    if (postId && AUTO_PUBLISH) entry.postId = postId;
+    if (SLOT_HOUR) entry.slot = SLOT_HOUR;
     if (evergreen) entry.evergreen = true;
     if (sp) entry.special = sp.key;
     posted.push(entry);

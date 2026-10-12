@@ -7,6 +7,11 @@ Reads one JSON object on stdin:
    "date_text": "১১ অক্টোবর ২০২৬", "tag": "#SakinMartBD",
    "credit": "Photo: Name / Unsplash", "mood": "normal" | "solemn"}
 
+With "format": "reel", writes two 1080x1920 layers instead, for a Reel:
+  "out_bg" (photo or design background) and "out_overlay" (transparent PNG
+  with label, headline and brand), kept inside the area that Facebook's
+  Reel buttons and caption don't cover.
+
 Exit codes: 0 = card written; 3 = Bangla text shaping unavailable (caller
 must fall back to a plain photo, never post broken Bangla); other = error.
 Fonts: Hind Siliguri and Poppins, both SIL Open Font License (assets/fonts).
@@ -142,5 +147,84 @@ def main():
     card.save(cfg['out'], 'PNG', optimize=True)
     print(cfg['out'])
 
+RW, RH = 1080, 1920
+
+def render_reel(cfg):
+    solemn = cfg.get('mood') == 'solemn'
+    accent = (200, 200, 200) if solemn else RED
+    # background
+    photo_path = cfg.get('photo') or ''
+    if photo_path and os.path.exists(photo_path):
+        bg = Image.open(photo_path).convert('RGB')
+        bg = ImageOps.fit(bg, (RW, RH), Image.LANCZOS, centering=(0.5, 0.4))
+        if solemn: bg = ImageOps.grayscale(bg).convert('RGB')
+    else:
+        bg = gradient(RW, RH, GREEN, DEEP) if not solemn else gradient(RW, RH, (60, 64, 68), GREY_DEEP)
+        if not solemn:
+            d = ImageDraw.Draw(bg); r = 300
+            d.ellipse([RW / 2 - r, 620 - r, RW / 2 + r, 620 + r], fill=accent)
+    bg.save(cfg['out_bg'], 'PNG')
+
+    # overlay (transparent)
+    ov = Image.new('RGBA', (RW, RH), (0, 0, 0, 0))
+    shade = Image.new('RGBA', (RW, RH), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shade)
+    base = (20, 22, 24) if solemn else (0, 40, 30)
+    for y in range(640, RH):
+        a = min(240, int((y - 640) / 520 * 240))
+        sd.line([(0, y), (RW, y)], fill=base + (a,))
+    ov = Image.alpha_composite(ov, shade)
+    d = ImageDraw.Draw(ov)
+
+    label = clean(cfg.get('label') or '')
+    if label:
+        lf = font('HindSiliguri-SemiBold.ttf', 46)
+        lw = d.textlength(label, font=lf)
+        d.rounded_rectangle([60, 250, 60 + lw + 64, 250 + 84], radius=42, fill=accent + (255,) if not solemn else (90, 94, 98, 255))
+        d.text((60 + 32, 250 + 10), label, font=lf, fill=WHITE)
+
+    headline = clean(cfg.get('headline') or '')
+    max_w, top, bot = 780, 1000, 1360
+    for size in range(96, 51, -4):
+        hf = font('HindSiliguri-Bold.ttf', size)
+        lines = wrap(d, headline, hf, max_w)
+        lh = int(size * 1.36)
+        if len(lines) <= 4 and lh * len(lines) <= bot - top:
+            break
+    else:
+        lines = lines[:4]
+        if lines: lines[-1] = lines[-1].rstrip(' ,।') + '…'
+    y = bot - lh * len(lines)
+    d.rectangle([60, y + 8, 70, bot - 8], fill=accent + (255,))
+    for ln in lines:
+        d.text((96, y), ln, font=hf, fill=WHITE)
+        y += lh
+
+    fy = 1400
+    lr = 46; lcx, lcy = 60 + lr, fy + lr
+    d.ellipse([lcx - lr, lcy - lr, lcx + lr, lcy + lr], fill=(GREEN if not solemn else (70, 74, 78)) + (255,))
+    d.ellipse([lcx - 33, lcy - 33, lcx + 33, lcy + 33], fill=accent + (255,))
+    sm = ImageFont.truetype(os.path.join(FONTS, 'Poppins-Bold.ttf'), 32)
+    b = d.textbbox((0, 0), 'SM', font=sm)
+    d.text((lcx - (b[2] - b[0]) / 2 - b[0], lcy - (b[3] - b[1]) / 2 - b[1]), 'SM', font=sm, fill=WHITE)
+    nf = ImageFont.truetype(os.path.join(FONTS, 'Poppins-Bold.ttf'), 32)
+    d.text((lcx + lr + 22, fy + 4), clean(cfg.get('page_name') or ''), font=nf, fill=WHITE)
+    d.text((lcx + lr + 22, fy + 48), clean(cfg.get('date_text') or ''), font=font('HindSiliguri-SemiBold.ttf', 30), fill=CREAM)
+
+    credit = clean(cfg.get('credit') or '')
+    if credit and photo_path:
+        cf = font('HindSiliguri-SemiBold.ttf', 26)
+        d.text((60, 345 + 20), credit, font=cf, fill=(235, 235, 235, 230))
+    ov.save(cfg['out_overlay'], 'PNG')
+    print(cfg['out_overlay'])
+
 if __name__ == '__main__':
-    main()
+    if not features.check('raqm'):
+        print('Bangla text shaping (raqm) not available', file=sys.stderr)
+        sys.exit(3)
+    _cfg = json.load(sys.stdin)
+    if _cfg.get('format') == 'reel':
+        render_reel(_cfg)
+    else:
+        sys.stdin = __import__('io').StringIO(json.dumps(_cfg))
+        main()

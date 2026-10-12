@@ -6,8 +6,9 @@ automated via GitHub Actions, no server to run or pay for.
 
 ## How it works
 
-1. A GitHub Actions workflow runs on a schedule (default: three times a day
-   at 09:00, 14:00 and 21:00 Bangladesh time).
+1. A GitHub Actions workflow wakes up at 6 candidate times a day (09, 12,
+   14, 17, 19, 21 Bangladesh time). A planner (smart timing) picks the 3
+   that perform best for your Page and posts only in those.
 2. It fetches Google's "Daily Trending Searches" feed for Bangladesh (free,
    no API key).
 3. It filters out anything that looks like a death, disaster, crime, or
@@ -220,6 +221,26 @@ them are a substitute for spot-checking it occasionally:
   add a `scripts/lib/video.js` following the same pattern as `image.js`,
   and post it via the Graph API's `/{page-id}/videos` endpoint instead of
   `/photos`.
+
+## Smart timing
+
+Every post records its time slot and Facebook post id. Once a day the
+planner reads reactions, comments and shares of the last 30 days' posts
+(score = reactions + 2x comments + 3x shares) and picks today's slots: the
+best ones so far plus one slot it keeps testing, so it adapts as your
+audience changes. The first week or so it rotates through every slot to
+collect data. Today's plan is saved in `data/schedule.json`.
+Variables: `SMART_TIMING=false` (fixed 09/14/21), `POSTS_PER_DAY` (1-6,
+default 3).
+
+## Reels
+
+Once a day — in the best-performing slot — the post goes out as an 8-second
+vertical Reel instead of a photo: slow zoom on the photo, Bangla headline
+fading in, silent audio track (no music, so no copyright problems). If the
+Reel can't be built or Facebook rejects it, the photocard is posted instead.
+To test right away: Actions -> Run workflow -> tick "Post this one as a Reel".
+Variables: `REELS=false` to turn off, `REEL_SECONDS` (default 8).
 
 ## News-link comments
 

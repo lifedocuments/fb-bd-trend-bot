@@ -5,7 +5,7 @@
 // pages_manage_engagement (news-link comments), and pages_manage_metadata (for the About/description update). See the
 // README for how to generate a long-lived token with these.
 
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 
 const GRAPH_VERSION = process.env.FB_GRAPH_VERSION || 'v21.0';
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
@@ -81,6 +81,60 @@ export async function postPhotoToPage({ pageId, imageUrl, filePath, caption, pub
       unpublished_content_type: 'DRAFT'
     }
   });
+}
+
+// Publishes a short vertical video as a Page Reel (3 steps: start an upload
+// session, send the bytes, finish with the caption). publish=false saves it
+// as a draft. Needs pages_manage_posts + pages_read_engagement.
+export async function postReelToPage({ pageId, filePath, description, publish }) {
+  const start = await graphRequest(`/${pageId}/video_reels`, { method: 'POST', params: { upload_phase: 'start' } });
+  if (!start.video_id) throw new Error('Facebook did not start a Reel upload session.');
+  const uploadUrl = start.upload_url || `https://rupload.facebook.com/video-upload/${GRAPH_VERSION}/${start.video_id}`;
+  const size = (await stat(filePath)).size;
+  const res = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `OAuth ${requireEnv('FB_PAGE_ACCESS_TOKEN')}`,
+      offset: '0',
+      file_size: String(size),
+      'Content-Type': 'application/octet-stream'
+    },
+    body: await readFile(filePath)
+  });
+  const up = await res.json().catch(() => ({}));
+  if (!res.ok || up.success === false || up.error) {
+    throw new Error(`Reel upload failed: ${up.error?.message || 'HTTP ' + res.status}`);
+  }
+  const fin = await graphRequest(`/${pageId}/video_reels`, {
+    method: 'POST',
+    params: {
+      upload_phase: 'finish',
+      video_id: start.video_id,
+      video_state: publish ? 'PUBLISHED' : 'DRAFT',
+      description
+    }
+  });
+  return { ...fin, id: start.video_id, video_id: start.video_id };
+}
+
+// Reads reactions/comments/shares for our own posts (batched, 50 per call).
+// Returns { [id]: { reactions, comments, shares } }; missing ids are skipped.
+export async function fetchEngagement(ids, { includeShares = true } = {}) {
+  const out = {};
+  for (let i = 0; i < ids.length; i += 50) {
+    const batch = ids.slice(i, i + 50);
+    const fields = ['reactions.summary(total_count).limit(0)', 'comments.summary(total_count).limit(0)'];
+    if (includeShares) fields.push('shares');
+    const data = await graphRequest('/', { params: { ids: batch.join(','), fields: fields.join(',') } });
+    for (const [id, v] of Object.entries(data)) {
+      out[id] = {
+        reactions: v.reactions?.summary?.total_count || 0,
+        comments: v.comments?.summary?.total_count || 0,
+        shares: v.shares?.count || 0
+      };
+    }
+  }
+  return out;
 }
 
 // Adds a comment as the Page under a published post (needs the
