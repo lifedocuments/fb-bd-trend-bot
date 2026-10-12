@@ -145,6 +145,10 @@ Under the **Variables** tab, add these (not secret, just settings):
   `BRAND_HASHTAG` (default `#SakinMartBD`, added to every post),
   `EVERGREEN_FALLBACK` (`false` to turn off evergreen posts on slow days —
   edit the topic list in `scripts/lib/evergreen.js`),
+  `PHOTOCARDS` (`false` to post plain photos instead of branded Bangla
+  photocards), `SPECIAL_DAYS` (`false` to skip special-day posts — edit
+  `scripts/lib/special-days.js`, and add Eid/Puja dates there once they are
+  officially announced),
   `GEMINI_MODEL`, `LLM_PROVIDER` (`gemini` or `claude`),
   `CLAUDE_MODEL`, `ALLOW_TREND_PICTURES` (`true` to also use Google
   Trends' own news pictures — off by default because those photos usually

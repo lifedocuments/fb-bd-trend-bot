@@ -13,6 +13,8 @@ import { fetchBdTrends } from './lib/trends.js';
 import { filterSafeTrends } from './lib/safety.js';
 import { writeTrendPost } from './lib/claude.js';
 import { EVERGREEN_TOPICS } from './lib/evergreen.js';
+import { specialDayFor } from './lib/special-days.js';
+import { makePhotocard } from './lib/photocard.js';
 import { pickImageForTrend } from './lib/image.js';
 import { postPhotoToPage, postTextToPage } from './lib/facebook.js';
 
@@ -27,6 +29,8 @@ const LANGUAGE = process.env.POST_LANGUAGE || 'bn';
 const PAGE_NAME = process.env.PAGE_NAME || 'our Page';
 const AUDIENCE = process.env.TARGET_AUDIENCE || 'Bangladeshi adults aged 20-50';
 const BRAND_HASHTAG = process.env.BRAND_HASHTAG || '#SakinMartBD';
+const PHOTOCARDS_ON = String(process.env.PHOTOCARDS ?? 'true').toLowerCase() !== 'false';
+const SPECIAL_DAYS_ON = String(process.env.SPECIAL_DAYS ?? 'true').toLowerCase() !== 'false';
 const EVERGREEN_ON = String(process.env.EVERGREEN_FALLBACK ?? 'true').toLowerCase() !== 'false';
 
 async function loadPostedLog() {
@@ -64,7 +68,14 @@ async function main() {
 
   // Candidates: fresh trends first (in trending order), then evergreen
   // topics so the Page never goes quiet on a slow trends day.
-  const candidates = freshTrends.slice(0, 5).map((t) => ({ trend: t, evergreen: false }));
+  const candidates = [];
+  // A special day (Victory Day, Pohela Boishakh, ...) goes first, once per day.
+  const special = SPECIAL_DAYS_ON ? specialDayFor() : null;
+  if (special && !posted.some((p) => p.special === special.key)) {
+    console.log(`[post-trend] Today is a special day: ${special.name}.`);
+    candidates.push({ trend: { title: special.name, context: '' }, special });
+  }
+  candidates.push(...freshTrends.slice(0, 5).map((t) => ({ trend: t, evergreen: false })));
   if (EVERGREEN_ON) {
     const recentEvergreen = new Set(posted.filter((p) => p.evergreen).slice(-(EVERGREEN_TOPICS.length - 1)).map((p) => p.title));
     const nextTopics = EVERGREEN_TOPICS.filter((t) => !recentEvergreen.has(t)).slice(0, 2);
@@ -75,21 +86,23 @@ async function main() {
     return;
   }
 
-  for (const { trend, evergreen } of candidates) {
-    console.log(`[post-trend] Trying ${evergreen ? 'evergreen topic' : 'trend'}: "${trend.title}"`);
+  for (const { trend, evergreen = false, special: sp = null } of candidates) {
+    const kind = sp ? 'special' : evergreen ? 'evergreen' : 'trend';
+    console.log(`[post-trend] Trying ${sp ? 'special day' : evergreen ? 'evergreen topic' : 'trend'}: "${trend.title}"`);
 
     let caption;
     let imageQuery = '';
+    let headline = '';
     if (DRY_RUN) {
       caption = `[DRY RUN] Would write a ${LANGUAGE} caption about: ${trend.title}`;
     } else {
       const post = await writeTrendPost({
-        trend, evergreen, language: LANGUAGE, pageName: PAGE_NAME, audience: AUDIENCE, brandHashtag: BRAND_HASHTAG
+        trend, evergreen, special: sp, language: LANGUAGE, pageName: PAGE_NAME, audience: AUDIENCE, brandHashtag: BRAND_HASHTAG
       });
       if (post.skip) {
         console.log(`[post-trend] Skipping "${trend.title}": ${post.reason}. Trying next candidate.`);
         // Remember skipped trends so later runs don't spend AI calls on them.
-        if (!evergreen) {
+        if (kind === 'trend') {
           posted.push({ title: trend.title, skippedAt: new Date().toISOString(), skipped: true, reason: post.reason });
           await savePostedLog(posted);
         }
@@ -97,10 +110,12 @@ async function main() {
       }
       caption = post.caption;
       imageQuery = post.imageQuery;
+      headline = post.headline;
       console.log(`[post-trend] Image search phrase: "${imageQuery}"`);
     }
 
     let imageUrl = null;
+    let cardPath = null;
     if (DRY_RUN) {
       imageUrl = '[DRY RUN would search Unsplash]';
     } else {
@@ -108,6 +123,18 @@ async function main() {
       if (image) {
         imageUrl = image.url;
         if (image.credit) caption = `${caption}\n\n${image.credit}`;
+      }
+      if (PHOTOCARDS_ON) {
+        cardPath = await makePhotocard({
+          imageUrl,
+          headline,
+          label: sp ? 'বিশেষ দিন' : evergreen ? 'আলাপ' : 'ট্রেন্ডিং',
+          credit: image?.cardCredit || '',
+          pageName: PAGE_NAME,
+          tag: BRAND_HASHTAG.startsWith('#') ? BRAND_HASHTAG : '#' + BRAND_HASHTAG,
+          mood: sp?.mood === 'solemn' ? 'solemn' : 'normal'
+        });
+        console.log(cardPath ? `[post-trend] Photocard ready (headline: "${headline}").` : '[post-trend] No photocard this time.');
       }
     }
 
@@ -122,7 +149,9 @@ async function main() {
     const pageId = process.env.FB_PAGE_ID;
     if (!pageId) throw new Error('FB_PAGE_ID is not set.');
     let result;
-    if (imageUrl && /^https?:\/\//.test(imageUrl)) {
+    if (cardPath) {
+      result = await postPhotoToPage({ pageId, filePath: cardPath, caption, publish: AUTO_PUBLISH });
+    } else if (imageUrl && /^https?:\/\//.test(imageUrl)) {
       result = await postPhotoToPage({ pageId, imageUrl, caption, publish: AUTO_PUBLISH });
     } else {
       console.warn('[post-trend] No image found — posting text-only.');
@@ -133,9 +162,10 @@ async function main() {
       ? '[post-trend] Published live to the Page.'
       : '[post-trend] Saved as an unpublished draft — review and publish it from Meta Business Suite, or set AUTO_PUBLISH=true once you trust the pipeline.');
 
-    posted.push(evergreen
-      ? { title: trend.title, postedAt: new Date().toISOString(), evergreen: true }
-      : { title: trend.title, postedAt: new Date().toISOString() });
+    const entry = { title: trend.title, postedAt: new Date().toISOString() };
+    if (evergreen) entry.evergreen = true;
+    if (sp) entry.special = sp.key;
+    posted.push(entry);
     await savePostedLog(posted);
     return;
   }

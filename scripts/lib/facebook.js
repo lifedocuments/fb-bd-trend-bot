@@ -5,6 +5,8 @@
 // and pages_manage_metadata (for the About/description update). See the
 // README for how to generate a long-lived token with these.
 
+import { readFile } from 'node:fs/promises';
+
 const GRAPH_VERSION = process.env.FB_GRAPH_VERSION || 'v21.0';
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
 
@@ -27,12 +29,28 @@ async function graphRequest(path, { method = 'GET', params = {} } = {}) {
     res = await fetch(url.toString(), { method, body });
   }
 
+  return parseGraphResponse(res, path);
+}
+
+async function parseGraphResponse(res, path) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data.error) {
     const msg = data.error ? `${data.error.message} (code ${data.error.code}, type ${data.error.type})` : `HTTP ${res.status}`;
     throw new Error(`Facebook Graph API error on ${path}: ${msg}`);
   }
   return data;
+}
+
+// Uploads a local image file (multipart "source" field) instead of a URL.
+async function graphUpload(path, params, filePath) {
+  const token = requireEnv('FB_PAGE_ACCESS_TOKEN');
+  const form = new FormData();
+  for (const [k, v] of Object.entries(params)) form.append(k, v);
+  form.append('access_token', token);
+  const buf = await readFile(filePath);
+  form.append('source', new Blob([buf], { type: 'image/png' }), 'photocard.png');
+  const res = await fetch(`${GRAPH_BASE}${path}`, { method: 'POST', body: form });
+  return parseGraphResponse(res, path);
 }
 
 // Posts a photo + caption.
@@ -44,17 +62,15 @@ async function graphRequest(path, { method = 'GET', params = {} } = {}) {
 //   unpublished feed post of type DRAFT with that photo attached. (A plain
 //   /photos call with published=false only creates a hidden photo that
 //   never appears in the Drafts tab.)
-export async function postPhotoToPage({ pageId, imageUrl, caption, publish }) {
+export async function postPhotoToPage({ pageId, imageUrl, filePath, caption, publish }) {
+  const upload = (params) => filePath
+    ? graphUpload(`/${pageId}/photos`, params, filePath)
+    : graphRequest(`/${pageId}/photos`, { method: 'POST', params: { url: imageUrl, ...params } });
+
   if (publish) {
-    return graphRequest(`/${pageId}/photos`, {
-      method: 'POST',
-      params: { url: imageUrl, caption, published: 'true' }
-    });
+    return upload({ caption, published: 'true' });
   }
-  const photo = await graphRequest(`/${pageId}/photos`, {
-    method: 'POST',
-    params: { url: imageUrl, published: 'false', temporary: 'true' }
-  });
+  const photo = await upload({ published: 'false', temporary: 'true' });
   if (!photo.id) throw new Error('Facebook did not return an id for the uploaded photo.');
   return graphRequest(`/${pageId}/feed`, {
     method: 'POST',

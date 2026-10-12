@@ -35,6 +35,20 @@ jobs:
         with:
           node-version: '22'
 
+      # Photocards are drawn with Python + Pillow (its wheel bundles the Bangla
+      # text-shaping engine). If any of this fails, posting still works: the
+      # bot just uses the plain photo instead of a card.
+      - uses: actions/setup-python@v6
+        continue-on-error: true
+        with:
+          python-version: '3.12'
+
+      - name: Install photocard tools
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y -qq libfribidi0 >/dev/null 2>&1 || true
+          python3 -m pip install --quiet pillow==12.1.1 || python3 -m pip install --quiet --break-system-packages pillow==12.1.1
+
       - name: Run posting script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -50,6 +64,8 @@ jobs:
           TARGET_AUDIENCE: ${{ vars.TARGET_AUDIENCE }}
           BRAND_HASHTAG: ${{ vars.BRAND_HASHTAG }}
           EVERGREEN_FALLBACK: ${{ vars.EVERGREEN_FALLBACK }}
+          PHOTOCARDS: ${{ vars.PHOTOCARDS }}
+          SPECIAL_DAYS: ${{ vars.SPECIAL_DAYS }}
           POST_LANGUAGE: ${{ vars.POST_LANGUAGE }}
           AUTO_PUBLISH: ${{ vars.AUTO_PUBLISH }}
           ALLOW_TREND_PICTURES: ${{ vars.ALLOW_TREND_PICTURES }}

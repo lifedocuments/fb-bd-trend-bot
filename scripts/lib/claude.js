@@ -167,6 +167,12 @@ function parseJsonReply(text) {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
+function firstSentence(text) {
+  const body = text.split('\n').filter((l) => l.trim() && !l.trim().startsWith('#')).join(' ');
+  const m = body.match(/^[^।!?.]+[।!?.]?/);
+  return (m ? m[0] : body).trim().slice(0, 90);
+}
+
 // Keeps at most 2 topic hashtags from the trailing hashtag line(s) and always
 // ends with the Page's brand hashtag, so every post carries it.
 export function finalizeHashtags(caption, brandHashtag = '#SakinMartBD', maxTopicTags = 2) {
@@ -186,7 +192,7 @@ export function finalizeHashtags(caption, brandHashtag = '#SakinMartBD', maxTopi
 // Decides whether a trend suits the Page, and if so writes the post and an
 // image search phrase — all in one AI call to stay well inside free limits.
 // Returns { skip: true, reason } or { skip: false, caption, imageQuery }.
-export async function writeTrendPost({ trend, language = 'bn', pageName, audience, evergreen = false, brandHashtag = '#SakinMartBD' }) {
+export async function writeTrendPost({ trend, language = 'bn', pageName, audience, evergreen = false, special = null, brandHashtag = '#SakinMartBD' }) {
   const langInstruction = LANGUAGE_INSTRUCTIONS[language] || LANGUAGE_INSTRUCTIONS.bn;
   const who = audience || 'Bangladeshi adults aged 20-50';
   const system = [
@@ -204,10 +210,21 @@ export async function writeTrendPost({ trend, language = 'bn', pageName, audienc
     'End with one short, natural question that invites people to share their own opinion or experience in the comments (e.g. "আপনার প্রিয় কোনটা?"). Never ask people to like, share, tag or type something to win — Facebook reduces reach for that kind of engagement bait.',
     'Format: 2-4 short sentences including the closing question, then exactly 2 relevant hashtags on a new line (the Page\'s brand hashtag is added automatically). No markdown, no asterisks, 2-4 emoji max, no quotation marks around the post.',
     'STEP 3 - image: give a short, general ENGLISH stock-photo search phrase (2-4 words) that visually fits the post, e.g. "cricket stadium crowd", "electric car", "Dhaka street food". Never a person\'s name or a brand logo.',
-    'Reply with ONLY a JSON object, no other text: {"skip": boolean, "reason": string, "caption": string, "image_query": string}. When skipping, caption and image_query may be empty strings.'
+    'STEP 4 - headline for the photocard image: one short line in the post\'s language, at most 9 words, no emoji, no hashtags, same fact rules as the post. It should make people stop scrolling and read.',
+    'Reply with ONLY a JSON object, no other text: {"skip": boolean, "reason": string, "caption": string, "image_query": string, "headline": string}. When skipping, the other fields may be empty strings.'
   ].join('\n');
 
-  const user = evergreen
+  const solemn = special?.mood === 'solemn';
+  const user = special
+    ? [
+        `Special day in Bangladesh today: ${special.name} (${special.bn}).`,
+        `What it is about: ${special.note}.`,
+        solemn
+          ? 'Tone: SOLEMN and respectful. A short tribute. No emoji, no jokes, no questions, nothing cheerful.'
+          : `Tone: ${special.mood}, warm and inclusive for everyone in Bangladesh.`,
+        'Do not name any political party or politician. Do not state numbers, dates or historical details beyond what is given here. Do not skip this unless it truly breaks a rule above.'
+      ].join('\n')
+    : evergreen
     ? [
         `Evergreen topic (not news): ${trend.title}`,
         'Write timeless, friendly content about this everyday Bangladeshi topic. Do not mention news, dates, "today", prices or statistics. Do not skip it unless it truly breaks a rule above.'
@@ -232,7 +249,8 @@ export async function writeTrendPost({ trend, language = 'bn', pageName, audienc
   if (!rawCaption) return { skip: true, reason: 'AI returned an empty caption' };
   const caption = finalizeHashtags(rawCaption, brandHashtag);
   const imageQuery = String(data.image_query || '').trim() || 'Bangladesh';
-  return { skip: false, caption, imageQuery };
+  const headline = String(data.headline || '').trim() || firstSentence(rawCaption);
+  return { skip: false, caption, imageQuery, headline };
 }
 
 export async function writePageAbout({ pageName, recentTopics = [], language = 'bn' }) {

@@ -28,13 +28,13 @@ async function searchUnsplash(query) {
     fetch(photo.links.download_location, { headers: { Authorization: `Client-ID ${key}` } }).catch(() => {});
   }
   const name = photo.user?.name || 'Unsplash photographer';
-  return { url: photo.urls.regular, credit: `📷 ${name} / Unsplash` };
+  return { url: photo.urls.regular, credit: `📷 ${name} / Unsplash`, cardCredit: `Photo: ${name} / Unsplash` };
 }
 
 export async function pickImageForTrend(trend, imageQuery) {
   if (String(process.env.ALLOW_TREND_PICTURES).toLowerCase() === 'true'
       && /^https?:\/\//.test(trend.picture || '')) {
-    return { url: trend.picture, credit: '' };
+    return { url: trend.picture, credit: '', cardCredit: '' };
   }
   const queries = [...new Set([imageQuery, 'Bangladesh'].filter(Boolean))];
   for (const query of queries) {
