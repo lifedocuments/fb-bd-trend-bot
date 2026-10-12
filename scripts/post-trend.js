@@ -16,7 +16,7 @@ import { EVERGREEN_TOPICS } from './lib/evergreen.js';
 import { specialDayFor } from './lib/special-days.js';
 import { makePhotocard } from './lib/photocard.js';
 import { pickImageForTrend } from './lib/image.js';
-import { postPhotoToPage, postTextToPage } from './lib/facebook.js';
+import { postPhotoToPage, postTextToPage, commentOnPost } from './lib/facebook.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOG_PATH = path.join(__dirname, '..', 'data', 'posted.json');
@@ -29,6 +29,7 @@ const LANGUAGE = process.env.POST_LANGUAGE || 'bn';
 const PAGE_NAME = process.env.PAGE_NAME || 'our Page';
 const AUDIENCE = process.env.TARGET_AUDIENCE || 'Bangladeshi adults aged 20-50';
 const BRAND_HASHTAG = process.env.BRAND_HASHTAG || '#SakinMartBD';
+const NEWS_COMMENT_ON = String(process.env.NEWS_LINK_COMMENT ?? 'true').toLowerCase() !== 'false';
 const PHOTOCARDS_ON = String(process.env.PHOTOCARDS ?? 'true').toLowerCase() !== 'false';
 const SPECIAL_DAYS_ON = String(process.env.SPECIAL_DAYS ?? 'true').toLowerCase() !== 'false';
 const EVERGREEN_ON = String(process.env.EVERGREEN_FALLBACK ?? 'true').toLowerCase() !== 'false';
@@ -148,6 +149,16 @@ async function main() {
 
     const pageId = process.env.FB_PAGE_ID;
     if (!pageId) throw new Error('FB_PAGE_ID is not set.');
+
+    // For live trend posts with a news article, point readers to the comment.
+    const newsUrl = /^https?:\/\//.test(trend.newsUrl || '') ? trend.newsUrl : '';
+    const willComment = NEWS_COMMENT_ON && AUTO_PUBLISH && kind === 'trend' && !!newsUrl;
+    if (willComment) {
+      const pointer = '👇 বিস্তারিত খবরের লিংক কমেন্টে';
+      caption = caption.includes('\n\n#')
+        ? caption.replace('\n\n#', `\n\n${pointer}\n\n#`)
+        : `${caption}\n\n${pointer}`;
+    }
     let result;
     if (cardPath) {
       result = await postPhotoToPage({ pageId, filePath: cardPath, caption, publish: AUTO_PUBLISH });
@@ -158,6 +169,23 @@ async function main() {
       result = await postTextToPage({ pageId, message: caption, publish: AUTO_PUBLISH });
     }
     console.log('[post-trend] Facebook API response:', JSON.stringify(result));
+    if (willComment) {
+      const target = result.post_id || result.id;
+      const source = trend.newsSource ? ` (${trend.newsSource})` : '';
+      const message = `📰 বিস্তারিত পড়ুন${source}:\n${trend.newsTitle ? trend.newsTitle + '\n' : ''}${newsUrl}`;
+      try {
+        await commentOnPost({ objectId: target, message });
+        console.log(`[post-trend] Added news-link comment: ${newsUrl}`);
+      } catch (e) {
+        // The post is already live, so never fail the run over the comment.
+        console.warn(`[post-trend] Could not add the news-link comment: ${e.message}`);
+        if (/permission|\(#200\)|\(#10\)|code 200|code 10\b/i.test(e.message)) {
+          console.warn('[post-trend] The Page token needs the pages_manage_engagement permission. See README "News-link comments".');
+        }
+      }
+    } else if (NEWS_COMMENT_ON && kind === 'trend' && newsUrl && !AUTO_PUBLISH) {
+      console.log(`[post-trend] Draft mode: no comment added. News link for reference: ${newsUrl}`);
+    }
     console.log(AUTO_PUBLISH
       ? '[post-trend] Published live to the Page.'
       : '[post-trend] Saved as an unpublished draft — review and publish it from Meta Business Suite, or set AUTO_PUBLISH=true once you trust the pipeline.');

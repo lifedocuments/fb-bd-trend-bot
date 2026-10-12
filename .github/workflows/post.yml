@@ -65,6 +65,7 @@ jobs:
           BRAND_HASHTAG: ${{ vars.BRAND_HASHTAG }}
           EVERGREEN_FALLBACK: ${{ vars.EVERGREEN_FALLBACK }}
           PHOTOCARDS: ${{ vars.PHOTOCARDS }}
+          NEWS_LINK_COMMENT: ${{ vars.NEWS_LINK_COMMENT }}
           SPECIAL_DAYS: ${{ vars.SPECIAL_DAYS }}
           POST_LANGUAGE: ${{ vars.POST_LANGUAGE }}
           AUTO_PUBLISH: ${{ vars.AUTO_PUBLISH }}

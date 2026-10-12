@@ -2,7 +2,7 @@
 // Needs FB_PAGE_ID and FB_PAGE_ACCESS_TOKEN in the environment.
 //
 // Required Page token permissions: pages_manage_posts, pages_read_engagement,
-// and pages_manage_metadata (for the About/description update). See the
+// pages_manage_engagement (news-link comments), and pages_manage_metadata (for the About/description update). See the
 // README for how to generate a long-lived token with these.
 
 import { readFile } from 'node:fs/promises';
@@ -81,6 +81,12 @@ export async function postPhotoToPage({ pageId, imageUrl, filePath, caption, pub
       unpublished_content_type: 'DRAFT'
     }
   });
+}
+
+// Adds a comment as the Page under a published post (needs the
+// pages_manage_engagement permission on the Page token).
+export async function commentOnPost({ objectId, message }) {
+  return graphRequest(`/${objectId}/comments`, { method: 'POST', params: { message } });
 }
 
 // Text-only fallback when no image could be found for the trend.

@@ -145,6 +145,8 @@ Under the **Variables** tab, add these (not secret, just settings):
   `BRAND_HASHTAG` (default `#SakinMartBD`, added to every post),
   `EVERGREEN_FALLBACK` (`false` to turn off evergreen posts on slow days —
   edit the topic list in `scripts/lib/evergreen.js`),
+  `NEWS_LINK_COMMENT` (`false` to stop adding the news-article link as the
+  first comment on live trend posts),
   `PHOTOCARDS` (`false` to post plain photos instead of branded Bangla
   photocards), `SPECIAL_DAYS` (`false` to skip special-day posts — edit
   `scripts/lib/special-days.js`, and add Eid/Puja dates there once they are
@@ -218,6 +220,17 @@ them are a substitute for spot-checking it occasionally:
   add a `scripts/lib/video.js` following the same pattern as `image.js`,
   and post it via the Graph API's `/{page-id}/videos` endpoint instead of
   `/photos`.
+
+## News-link comments
+
+On live trend posts, the bot adds the news article's link (from Google
+Trends) as the first comment and adds "👇 বিস্তারিত খবরের লিংক কমেন্টে" to
+the caption. Links inside the post itself tend to get less reach, so the
+link goes in the comment. This needs the `pages_manage_engagement`
+permission on your Page token — generate the token with that permission
+too (Graph API Explorer), then update the `FB_PAGE_ACCESS_TOKEN` secret.
+If the permission is missing the post still goes out; only the comment is
+skipped, with a warning in the log.
 
 ## Troubleshooting
 

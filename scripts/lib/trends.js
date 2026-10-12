@@ -76,12 +76,15 @@ export async function fetchBdTrends() {
     const picture = extractAll(chunk, 'picture')[0] || '';
     const newsTitles = extractAll(chunk, 'news_item_title');
     const newsUrls = extractAll(chunk, 'news_item_url');
+    const newsSources = extractAll(chunk, 'news_item_source');
     return {
       title,
       traffic,
       picture,
       context: newsTitles.slice(0, 3).join(' | '),
-      newsUrl: newsUrls[0] || ''
+      newsUrl: newsUrls[0] || '',
+      newsTitle: newsTitles[0] || '',
+      newsSource: newsSources[0] || ''
     };
   }).filter((t) => t.title);
 
