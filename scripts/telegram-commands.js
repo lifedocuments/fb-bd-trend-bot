@@ -73,13 +73,21 @@ async function handle(cmd, control) {
     case '/resume':
       control.paused = false; delete control.pausedAt;
       return '▶️ বট আবার চালু। পরের নির্ধারিত সময়ে পোস্ট হবে।';
-    case '/postnow': case '/reel':
+    case '/postnow': case '/reel': {
+      // Guard against double-starts (double tap, or the same command seen twice).
+      const lastAt = Date.parse(control.lastDispatchAt || '') || 0;
+      const gapMin = Number(process.env.DISPATCH_GUARD_MINUTES || 10);
+      if (Date.now() - lastAt < gapMin * 60000) {
+        return `⏳ একটি পোস্ট ইতিমধ্যে শুরু হয়েছে (${Math.round((Date.now() - lastAt) / 60000)} মিনিট আগে)। আবার পোস্ট করতে ${gapMin} মিনিট পর চেষ্টা করুন।`;
+      }
       try {
         await dispatchPost(cmd === '/reel');
+        control.lastDispatchAt = new Date().toISOString();
         return cmd === '/reel' ? '🎬 রিল তৈরি শুরু হয়েছে — কয়েক মিনিটে পোস্ট হবে।' : '🚀 পোস্ট তৈরি শুরু হয়েছে — কয়েক মিনিটে পোস্ট হবে।';
       } catch (e) {
         return `❌ শুরু করা গেল না: ${e.message}`;
       }
+    }
     case '/report':
       try {
         const md = await readFile(REPORT, 'utf8');
@@ -94,8 +102,16 @@ async function handle(cmd, control) {
 async function main() {
   if (!telegramOn()) { console.log('[telegram] Not configured — skipping commands.'); return; }
   const control = await loadControl();
-  const before = JSON.stringify(control);
-  const updates = await getUpdates((control.lastUpdateId || 0) + 1);
+  const handledUpTo = control.lastUpdateId || 0;
+  const updates = (await getUpdates(handledUpTo + 1)).filter((u) => u.update_id > handledUpTo);
+  if (updates.length) {
+    // Tell Telegram these are handled now, so they are never delivered
+    // again even if saving data/control.json fails later in this run.
+    const maxId = Math.max(...updates.map((u) => u.update_id));
+    control.lastUpdateId = Math.max(control.lastUpdateId || 0, maxId);
+    try { await getUpdates(maxId + 1); } catch (e) { console.warn('[telegram] Could not confirm updates:', e.message); }
+    await saveControl(control);
+  }
   for (const u of updates) {
     control.lastUpdateId = Math.max(control.lastUpdateId || 0, u.update_id);
     const msg = u.message;
@@ -111,7 +127,7 @@ async function main() {
     const reply = await handle(cmd, control);
     await notify(reply);
   }
-  if (JSON.stringify(control) !== before) await saveControl(control);
+  await saveControl(control);
 }
 
 main().catch((e) => console.warn('[telegram] Command check failed (posting continues):', e.message));

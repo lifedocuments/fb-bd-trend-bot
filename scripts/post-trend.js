@@ -27,7 +27,7 @@ import { makeReel } from './lib/reel.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOG_PATH = path.join(__dirname, '..', 'data', 'posted.json');
-const MAX_LOG_ENTRIES = 200;
+const MAX_LOG_ENTRIES = 600;
 const DRY_RUN = String(process.env.DRY_RUN).toLowerCase() === 'true';
 // Defaults to draft (unpublished) posts until you flip this in your repo's
 // GitHub Actions secrets/variables once you trust the output quality.
