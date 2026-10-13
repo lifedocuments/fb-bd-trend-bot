@@ -87,6 +87,9 @@ jobs:
           BREAKING: 'true'
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MAKE_WEBHOOK_URL: ${{ secrets.MAKE_WEBHOOK_URL }}
+          MAKE_SHARED_SECRET: ${{ secrets.MAKE_SHARED_SECRET }}
+          PUBLISHER: ${{ vars.PUBLISHER }}
           BREAKING_MIN_SEARCHES: ${{ vars.BREAKING_MIN_SEARCHES }}
           BREAKING_MIN_GAP_MINUTES: ${{ vars.BREAKING_MIN_GAP_MINUTES }}
           BREAKING_MAX_AGE_HOURS: ${{ vars.BREAKING_MAX_AGE_HOURS }}

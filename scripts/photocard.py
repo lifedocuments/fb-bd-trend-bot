@@ -146,7 +146,10 @@ def main():
         tw = d.textlength(tag, font=tf)
         d.text((W - 60 - tw, fy + 28), tag, font=tf, fill=CREAM)
 
-    card.save(cfg['out'], 'PNG', optimize=True)
+    if str(cfg['out']).lower().endswith(('.jpg', '.jpeg')):
+        card.save(cfg['out'], 'JPEG', quality=88, optimize=True, progressive=True)
+    else:
+        card.save(cfg['out'], 'PNG', optimize=True)
     print(cfg['out'])
 
 RW, RH = 1080, 1920

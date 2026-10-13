@@ -28,7 +28,7 @@ function runPython(input, timeoutMs = 60000) {
   });
 }
 
-export async function makePhotocard({ imageUrl, headline, label, credit, pageName, tag, mood }) {
+export async function makePhotocard({ imageUrl, headline, label, credit, pageName, tag, mood, format = 'png' }) {
   try {
     const dir = await mkdtemp(path.join(tmpdir(), 'photocard-'));
     let photo = '';
@@ -43,7 +43,7 @@ export async function makePhotocard({ imageUrl, headline, label, credit, pageNam
         console.warn('[photocard] Could not download the photo, using the plain design:', e.message);
       }
     }
-    const out = path.join(dir, 'card.png');
+    const out = path.join(dir, format === 'jpg' ? 'card.jpg' : 'card.png');
     const { code, err } = await runPython({
       out, headline, photo, label, credit, mood,
       page_name: pageName, tag, date_text: banglaDate()

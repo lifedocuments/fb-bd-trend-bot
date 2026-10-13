@@ -19,6 +19,7 @@ import { makePhotocard } from './lib/photocard.js';
 import { pickImageForTrend } from './lib/image.js';
 import { postPhotoToPage, postTextToPage, commentOnPost, postReelToPage, postStoryToPage } from './lib/facebook.js';
 import { makeStoryImage } from './lib/story.js';
+import { makeEnabled, publishViaMake } from './lib/make.js';
 import { loadLearnings } from './lib/brain.js';
 import { notify, postLink } from './lib/telegram.js';
 import { findBreaking } from './lib/breaking.js';
@@ -42,7 +43,9 @@ const TOPIC_FEEDS = /^none$/i.test(process.env.TOPIC_FEEDS || '')
   : (process.env.TOPIC_FEEDS || 'ENTERTAINMENT,TECHNOLOGY,BUSINESS').toUpperCase().split(/[\s,]+/).filter(Boolean);
 const BREAKING = String(process.env.BREAKING).toLowerCase() === 'true';
 const STORIES_ON = String(process.env.STORIES ?? 'true').toLowerCase() !== 'false';
-const MAKE_REEL = String(process.env.MAKE_REEL).toLowerCase() === 'true';
+const VIA_MAKE = makeEnabled();
+// Make.com mode can't publish Reels or Stories, so those become photocards.
+const MAKE_REEL = !VIA_MAKE && String(process.env.MAKE_REEL).toLowerCase() === 'true';
 const SLOT_HOUR = Number(process.env.SLOT_HOUR) || null;
 const NEWS_COMMENT_ON = String(process.env.NEWS_LINK_COMMENT ?? 'true').toLowerCase() !== 'false';
 const PHOTOCARDS_ON = String(process.env.PHOTOCARDS ?? 'true').toLowerCase() !== 'false';
@@ -249,7 +252,7 @@ async function main() {
         console.log(reelPath ? `[post-trend] Reel ready (headline: "${headline}").` : '[post-trend] Reel could not be built — will post a photocard instead.');
       }
       if (!reelPath && PHOTOCARDS_ON) {
-        cardPath = await makePhotocard({ ...visual, tag: BRAND_HASHTAG.startsWith('#') ? BRAND_HASHTAG : '#' + BRAND_HASHTAG });
+        cardPath = await makePhotocard({ ...visual, format: VIA_MAKE ? 'jpg' : 'png', tag: BRAND_HASHTAG.startsWith('#') ? BRAND_HASHTAG : '#' + BRAND_HASHTAG });
         console.log(cardPath ? `[post-trend] Photocard ready (headline: "${headline}").` : '[post-trend] No photocard this time.');
       }
     }
@@ -268,6 +271,9 @@ async function main() {
     // For live trend posts with a news article, point readers to the comment.
     const newsUrl = /^https?:\/\//.test(trend.newsUrl || '') ? trend.newsUrl : '';
     const willComment = NEWS_COMMENT_ON && AUTO_PUBLISH && kind === 'trend' && !!newsUrl;
+    const newsMessage = willComment
+      ? `📰 বিস্তারিত পড়ুন${trend.newsSource ? ` (${trend.newsSource})` : ''}:\n${trend.newsTitle ? trend.newsTitle + '\n' : ''}${newsUrl}`
+      : '';
     if (willComment) {
       const pointer = '👇 বিস্তারিত খবরের লিংক কমেন্টে';
       caption = caption.includes('\n\n#')
@@ -276,7 +282,16 @@ async function main() {
     }
     let result;
     let format = 'photo';
-    if (reelPath) {
+    if (VIA_MAKE) {
+      if (!AUTO_PUBLISH) {
+        console.log('[post-trend] Make.com mode publishes live and cannot save drafts — set AUTO_PUBLISH=true. Nothing posted.');
+        return;
+      }
+      result = await publishViaMake({ caption, imagePath: cardPath, imageUrl, comment: newsMessage });
+      format = result.kind === 'text' ? 'text' : 'photo';
+      if (result.post_id && !String(result.post_id).includes('_')) result.post_id = `${pageId}_${result.post_id}`;
+      console.log('[post-trend] Published via Make.com' + (newsMessage ? ' (with news-link comment).' : '.'));
+    } else if (reelPath) {
       try {
         result = await postReelToPage({ pageId, filePath: reelPath, description: caption, publish: AUTO_PUBLISH });
         format = 'reel';
@@ -300,15 +315,13 @@ async function main() {
       format = 'text';
     }
     console.log('[post-trend] Facebook API response:', JSON.stringify(result));
-    if (willComment) {
-      const source = trend.newsSource ? ` (${trend.newsSource})` : '';
-      const message = `📰 বিস্তারিত পড়ুন${source}:\n${trend.newsTitle ? trend.newsTitle + '\n' : ''}${newsUrl}`;
-      await addNewsComment({ result, pageId, format, message, newsUrl });
-    } else if (NEWS_COMMENT_ON && kind === 'trend' && newsUrl && !AUTO_PUBLISH) {
+    if (willComment && !VIA_MAKE) {
+      await addNewsComment({ result, pageId, format, message: newsMessage, newsUrl });
+    } else if (NEWS_COMMENT_ON && kind === 'trend' && newsUrl && !AUTO_PUBLISH && !VIA_MAKE) {
       console.log(`[post-trend] Draft mode: no comment added. News link for reference: ${newsUrl}`);
     }
     // Also share it as a Page Story (top of followers' feeds for 24h).
-    if (AUTO_PUBLISH && STORIES_ON && visual) {
+    if (AUTO_PUBLISH && STORIES_ON && visual && !VIA_MAKE) {
       try {
         const storyPath = await makeStoryImage({ ...visual });
         if (storyPath) {

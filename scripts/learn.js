@@ -15,11 +15,7 @@ const MIN_POSTS = Number(process.env.LEARN_MIN_POSTS || 10);
 const PAGE_NAME = process.env.PAGE_NAME || 'our Page';
 
 async function getEngagement(ids) {
-  try { return await fetchEngagement(ids); }
-  catch (e) {
-    console.warn('[learn] Reading with shares failed, retrying without:', e.message);
-    return fetchEngagement(ids, { includeShares: false });
-  }
+  return fetchEngagement(ids);
 }
 
 function table(obj, label) {

@@ -222,6 +222,36 @@ them are a substitute for spot-checking it occasionally:
   and post it via the Graph API's `/{page-id}/videos` endpoint instead of
   `/photos`.
 
+## Publishing through Make.com (when the Meta app can't go Live)
+
+Posts made by a Meta app in Development mode are visible only to the app's
+admins, and going Live needs business verification. Without documents, the
+bot can publish through a Make.com scenario instead: Make's own Facebook
+connection is approved by Meta, so its posts are public. Everything else
+(trends, AI, photocards, variety, breaking posts, learning, Telegram) stays
+the same; only the final publish step goes through Make. Reels and Stories
+aren't available this way (the Reel slot posts a photocard).
+
+Set it up once:
+1. Create a free account at make.com and a new scenario.
+2. Module 1 — **Webhooks → Custom webhook**: add a webhook, copy its URL.
+3. Filter after it: `secret` **Equal to** your own secret text.
+4. Module 2 — **Facebook Pages → Upload a Photo**: connect your Page; Photo
+   file name = `image_name`, data = `toBinary(image_base64; "base64")`;
+   Message/Caption = `caption`.
+5. Module 3 — **Webhooks → Webhook response**: status 200, body
+   `{"post_id":"<Post ID from module 2>","id":"<ID from module 2>"}`.
+6. Module 4 (filter: `comment` exists) — **Facebook Pages → Create a
+   Comment**: Post ID from module 2, Message = `comment`.
+7. Turn the scenario ON (run immediately).
+8. GitHub secrets: `MAKE_WEBHOOK_URL` (the webhook URL) and
+   `MAKE_SHARED_SECRET` (the same secret text as step 3).
+
+The bot then publishes via Make automatically. To go back to direct posting
+(e.g. after business verification), delete `MAKE_WEBHOOK_URL` or set the
+variable `PUBLISHER=graph`. Make's free plan has a monthly operations
+limit; each post uses about 3–4.
+
 ## The brain (weekly learning)
 
 `.github/workflows/learn.yml` runs every Sunday 23:00 Bangladesh time. It

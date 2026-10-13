@@ -125,23 +125,42 @@ export async function postStoryToPage({ pageId, filePath }) {
   return graphRequest(`/${pageId}/photo_stories`, { method: 'POST', params: { photo_id: photo.id } });
 }
 
-// Reads reactions/comments/shares for our own posts (batched, 50 per call).
-// Returns { [id]: { reactions, comments, shares } }; missing ids are skipped.
-export async function fetchEngagement(ids, { includeShares = true } = {}) {
+// Reads reactions/comments/shares for our own posts, one post per request
+// (Facebook retired the multi-post "ids" query in newer API versions), a few
+// requests at a time. Posts that fail (e.g. deleted) are skipped.
+// Returns { [id]: { reactions, comments, shares } }.
+export async function fetchEngagement(ids, { includeShares = true, concurrency = 5 } = {}) {
   const out = {};
-  for (let i = 0; i < ids.length; i += 50) {
-    const batch = ids.slice(i, i + 50);
-    const fields = ['reactions.summary(total_count).limit(0)', 'comments.summary(total_count).limit(0)'];
-    if (includeShares) fields.push('shares');
-    const data = await graphRequest('/', { params: { ids: batch.join(','), fields: fields.join(',') } });
-    for (const [id, v] of Object.entries(data)) {
-      out[id] = {
-        reactions: v.reactions?.summary?.total_count || 0,
-        comments: v.comments?.summary?.total_count || 0,
-        shares: v.shares?.count || 0
-      };
+  const base = ['reactions.summary(total_count).limit(0)', 'comments.summary(total_count).limit(0)'];
+  let firstError = null;
+  let failed = 0;
+  const readOne = async (id) => {
+    const tryFields = includeShares ? [[...base, 'shares'], base] : [base];
+    for (const fields of tryFields) {
+      try {
+        const v = await graphRequest(`/${encodeURIComponent(id)}`, { params: { fields: fields.join(',') } });
+        out[id] = {
+          reactions: v.reactions?.summary?.total_count || 0,
+          comments: v.comments?.summary?.total_count || 0,
+          shares: v.shares?.count || 0
+        };
+        return;
+      } catch (e) {
+        // Some objects (e.g. Reels/videos) have no "shares" field: retry without it.
+        if (fields.includes('shares') && /shares|nonexisting field|\(#100\)/i.test(e.message)) continue;
+        firstError ||= e; failed++;
+        return;
+      }
     }
-  }
+  };
+  const queue = [...new Set(ids.map(String))];
+  const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    while (queue.length) await readOne(queue.shift());
+  });
+  await Promise.all(workers);
+  if (failed) console.warn(`[facebook] Could not read engagement for ${failed} of ${ids.length} post(s): ${firstError?.message?.slice(0, 160)}`);
+  // If nothing at all could be read, surface the error so callers can fall back.
+  if (ids.length && !Object.keys(out).length && firstError) throw firstError;
   return out;
 }
 

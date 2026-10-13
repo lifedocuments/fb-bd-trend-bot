@@ -116,6 +116,9 @@ jobs:
           SLOT_HOUR: ${{ steps.slot.outputs.slot }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MAKE_WEBHOOK_URL: ${{ secrets.MAKE_WEBHOOK_URL }}
+          MAKE_SHARED_SECRET: ${{ secrets.MAKE_SHARED_SECRET }}
+          PUBLISHER: ${{ vars.PUBLISHER }}
         run: node scripts/post-trend.js
 
       - name: Save posting log and today's plan
