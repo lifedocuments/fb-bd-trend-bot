@@ -196,5 +196,20 @@
     "headline": "সকালের নাস্তায় গরম পরোটা আর চা আপনার পছন্দ?",
     "videoId": "2205915223679287",
     "evergreen": true
+  },
+  {
+    "title": "পেনশন",
+    "skippedAt": "2026-10-13T03:16:46.533Z",
+    "skipped": true,
+    "reason": "The news is about EPFO pension rules in India, which does not apply to Bangladesh."
+  },
+  {
+    "title": "ব্যাংক এশিয়া লিমিটেড",
+    "postedAt": "2026-10-13T03:17:07.082Z",
+    "format": "photo",
+    "category": "business",
+    "postId": "104979441905402_1161353959737395",
+    "slot": 9,
+    "headline": "ব্যাংক এশিয়াতে চাকরির দারুণ সুযোগ"
   }
 ]
