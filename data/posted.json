@@ -228,5 +228,26 @@
     "postId": "104979441905402_1161537706385687",
     "slot": 14,
     "headline": "লিটনের সেঞ্চুরিতে জয়ের পথে বাংলাদেশ"
+  },
+  {
+    "title": "‘নানা পাটেকার হয়তো জীবিত আছেন, বিদেশে আত্মগোপন করে থাকতে পারেন’",
+    "skippedAt": "2026-10-13T15:16:49.268Z",
+    "skipped": true,
+    "reason": "The topic concerns rumors of death, disappearance, and foreign hiding of an individual, which does not fit our family-friendly, positive engagement guidelines."
+  },
+  {
+    "title": "আলাদা থাকছেন সাবিলা নূর, দাম্পত্যে টানাপোড়েনের গুঞ্জন!",
+    "skippedAt": "2026-10-13T15:17:22.414Z",
+    "skipped": true,
+    "reason": "could not read the AI reply (Unexpected token 'ম', ...\"caption\": মিডিয়ায় \"... is not valid JSON)"
+  },
+  {
+    "title": "সালমান খানকে দেখতে কত টাকার টিকিট কিনেছিলেন চাঁদনী, কী ঘটেছিল সেদিন",
+    "postedAt": "2026-10-13T15:19:46.687Z",
+    "format": "photo",
+    "category": "entertainment",
+    "postId": "104979441905402_1161848106354647",
+    "slot": 21,
+    "headline": "সালমান খানকে দেখতে কত টাকার টিকিট কিনেছিলেন চাঁদনী"
   }
 ]
