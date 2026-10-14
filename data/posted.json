@@ -281,5 +281,20 @@
     "postId": "104979441905402_1162724522933672",
     "slot": 19,
     "headline": "হায়দ্রাবাদে আজ ভারত বনাম ওয়েস্ট ইন্ডিজ টি-টোয়েন্টি"
+  },
+  {
+    "title": "প্রধানমন্ত্রী",
+    "skippedAt": "2026-10-14T15:25:18.928Z",
+    "skipped": true,
+    "reason": "The topic involves the Prime Minister and political figures, which borders on political content and does not fit the lighthearted commercial focus of the page."
+  },
+  {
+    "title": "ai gemini",
+    "postedAt": "2026-10-14T15:25:24.705Z",
+    "format": "photo",
+    "category": "tech",
+    "postId": "104979441905402_1162823776257080",
+    "slot": 21,
+    "headline": "ডেভেলপারদের জন্য নতুন এআই মডেল আনল গুগল"
   }
 ]
