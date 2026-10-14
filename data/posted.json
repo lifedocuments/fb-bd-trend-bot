@@ -257,5 +257,20 @@
     "category": "business",
     "postId": "104979441905402_1162331279639663",
     "headline": "ব্র্যাক ও বিভিন্ন প্রতিষ্ঠানে চাকরির সুযোগ"
+  },
+  {
+    "title": "আবহাওয়ার খবর",
+    "skippedAt": "2026-10-14T06:20:10.855Z",
+    "skipped": true,
+    "reason": "The topic is about weather forecasts in West Bengal (South Bengal/Kolkata), which is outside of Bangladesh and not relevant to the local audience of Sakin Mart Bangladesh."
+  },
+  {
+    "title": "mama awards voting",
+    "postedAt": "2026-10-14T06:20:16.533Z",
+    "format": "photo",
+    "category": "entertainment",
+    "postId": "104979441905402_1162419116297546",
+    "slot": 12,
+    "headline": "সামনে এলো ২০২৬ এমএএমএ অ্যাওয়ার্ডসের নমিনেশন"
   }
 ]
