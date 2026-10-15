@@ -296,5 +296,26 @@
     "postId": "104979441905402_1162823776257080",
     "slot": 21,
     "headline": "ডেভেলপারদের জন্য নতুন এআই মডেল আনল গুগল"
+  },
+  {
+    "title": "বিদ্যালয়",
+    "skippedAt": "2026-10-15T08:27:40.065Z",
+    "skipped": true,
+    "reason": "The topic involves teacher misconduct and fighting, which relates to disciplinary actions and conflicts, better skipped to maintain a family-friendly and positive page tone."
+  },
+  {
+    "title": "মার্কিন যুক্তরাষ্ট্র",
+    "skippedAt": "2026-10-15T08:28:03.544Z",
+    "skipped": true,
+    "reason": "The trending topic is about military tension, war plans, and political conflict involving the USA and Iran, which falls under war, political unrest, and violence according to the skip criteria."
+  },
+  {
+    "title": "অভিষেক শর্মা",
+    "postedAt": "2026-10-15T08:28:17.652Z",
+    "format": "photo",
+    "category": "sports",
+    "postId": "104979441905402_1163477162858408",
+    "slot": 14,
+    "headline": "টি-টোয়েন্টি ক্রিকেটে দারুণ ছন্দে অভিষেক শর্মা"
   }
 ]
