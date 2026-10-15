@@ -1,12 +1,12 @@
 {
-  "date": "2026-10-14",
+  "date": "2026-10-15",
   "slots": [
-    12,
-    19,
-    21
+    14,
+    17,
+    19
   ],
-  "reelSlot": 21,
-  "reason": "collecting data (trying every slot)",
+  "reelSlot": 14,
+  "reason": "best slots so far + testing new ones",
   "stats": [
     {
       "hour": 9,
@@ -15,13 +15,13 @@
     },
     {
       "hour": 12,
-      "posts": 0,
-      "avgScore": 0
+      "posts": 1,
+      "avgScore": 2
     },
     {
       "hour": 14,
-      "posts": 1,
-      "avgScore": 2
+      "posts": 2,
+      "avgScore": 3
     },
     {
       "hour": 17,
@@ -35,8 +35,8 @@
     },
     {
       "hour": 21,
-      "posts": 0,
-      "avgScore": 0
+      "posts": 1,
+      "avgScore": 3
     }
   ]
 }
