@@ -1,11 +1,11 @@
 {
-  "date": "2026-10-16",
+  "date": "2026-10-17",
   "slots": [
+    9,
     14,
-    17,
     21
   ],
-  "reelSlot": 14,
+  "reelSlot": 21,
   "reason": "best slots so far + testing new ones",
   "stats": [
     {
@@ -20,17 +20,17 @@
     },
     {
       "hour": 14,
-      "posts": 2,
-      "avgScore": 3
+      "posts": 3,
+      "avgScore": 2.7
     },
     {
       "hour": 17,
-      "posts": 0,
-      "avgScore": 0
+      "posts": 1,
+      "avgScore": 2
     },
     {
       "hour": 19,
-      "posts": 1,
+      "posts": 2,
       "avgScore": 2
     },
     {
