@@ -1,23 +1,24 @@
 # Weekly report — 2026-10-18
 
-Measured **23 posts** from the last 30 days. Average score **2.7** (reactions + 2×comments + 3×shares).
+Measured **25 posts** from the last 30 days. Average score **2.5** (reactions + 2×comments + 3×shares).
 
 ## What the bot learned
-- ব্যবসায়িক এবং অর্থনৈতিক বিষয়বস্তু যেমন এলপিজি ও সোনার দাম সম্পর্কিত পোস্টগুলোতে পাঠকদের অংশগ্রহণ সবচেয়ে বেশি দেখা গেছে।
-- রিল ফরম্যাটের তুলনায় ছবিযুক্ত পোস্টগুলোতে এঙ্গেজমেন্ট বা স্কোর উল্লেখযোগ্যভাবে ভালো এসেছে।
-- সকালের দিকে বিশেষ করে সকাল ৯টার পোস্টগুলোতে তুলনামূলক বেশি সাড়া পাওয়া গেছে।
+- ব্যবসা ও অর্থনীতি সম্পর্কিত পোস্টগুলোতে তুলনামূলক বেশি এনগেজমেন্ট পাওয়া গেছে।
+- লাইফস্টাইল ক্যাটাগরির রিল পোস্টটি খুব একটা সাড়া ফেলতে পারেনি।
+- সকাল ৯টার দিকে প্রকাশিত পোস্টগুলোর পারফরম্যান্স সবচেয়ে ভালো ছিল।
 
 ## New writing lessons (used from now on)
-- Use photo formats instead of reels to drive better audience engagement.
-- Post early in the day around 9 AM when engagement tends to peak.
-- Frame captions with a clear, informative angle rather than generic lifestyle questions.
-- End posts with a natural conversational question related to the daily utility of the topic.
+- Focus on business and market-related topics as they attract higher engagement.
+- Keep headlines direct and informative without using exaggerated claims.
+- Maintain a professional and informative tone in the post body.
+- Avoid using reels for lifestyle topics based on current performance.
+- Schedule important posts around the morning slot for better visibility.
 
 ## Category weights (above 1 = chosen more often)
 - sports: 1
-- tech: 1
+- tech: 1.1
 - business: 1.4
-- news: 1
+- news: 0.9
 
 ## Top posts
 1. বৃহস্পতি ও শুক্রবার দেশজুড়ে এলপিজি বিক্রি বন্ধের ঘোষণা — business, photo, score 5 (👍0 💬1 ↗1)
@@ -28,24 +29,24 @@ Measured **23 posts** from the last 30 days. Average score **2.7** (reactions + 
 |---|---|---|
 | business | 4 | 3.8 |
 | tech | 4 | 2.8 |
-| sports | 5 | 2.6 |
-| news | 4 | 2.5 |
+| sports | 6 | 2.5 |
 | entertainment | 2 | 2.5 |
 | unknown | 2 | 2 |
+| news | 5 | 2 |
 | culture | 1 | 2 |
 | lifestyle | 1 | 1 |
 
 | Format | Posts | Avg score |
 |---|---|---|
-| photo | 21 | 2.8 |
+| photo | 23 | 2.6 |
 | reel | 2 | 1.5 |
 
 | Time slot (BD hour) | Posts | Avg score |
 |---|---|---|
 | 9 | 2 | 4 |
 | none | 8 | 3 |
-| 14 | 4 | 2.5 |
-| 21 | 4 | 2.3 |
+| 21 | 5 | 2.2 |
 | 12 | 1 | 2 |
+| 14 | 5 | 2 |
 | 17 | 2 | 2 |
 | 19 | 2 | 2 |
