@@ -1,0 +1,22 @@
+{
+  "updatedAt": "2026-10-18T03:59:10.192Z",
+  "basedOnPosts": 23,
+  "source": "AI",
+  "tips": [
+    "Use photo formats instead of reels to drive better audience engagement.",
+    "Post early in the day around 9 AM when engagement tends to peak.",
+    "Frame captions with a clear, informative angle rather than generic lifestyle questions.",
+    "End posts with a natural conversational question related to the daily utility of the topic."
+  ],
+  "insights": [
+    "ব্যবসায়িক এবং অর্থনৈতিক বিষয়বস্তু যেমন এলপিজি ও সোনার দাম সম্পর্কিত পোস্টগুলোতে পাঠকদের অংশগ্রহণ সবচেয়ে বেশি দেখা গেছে।",
+    "রিল ফরম্যাটের তুলনায় ছবিযুক্ত পোস্টগুলোতে এঙ্গেজমেন্ট বা স্কোর উল্লেখযোগ্যভাবে ভালো এসেছে।",
+    "সকালের দিকে বিশেষ করে সকাল ৯টার পোস্টগুলোতে তুলনামূলক বেশি সাড়া পাওয়া গেছে।"
+  ],
+  "weights": {
+    "sports": 1,
+    "tech": 1,
+    "business": 1.4,
+    "news": 1
+  }
+}
