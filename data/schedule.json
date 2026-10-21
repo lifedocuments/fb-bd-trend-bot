@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-21",
+  "date": "2026-10-22",
   "slots": [
     9,
     17,
@@ -30,12 +30,12 @@
     },
     {
       "hour": 19,
-      "posts": 3,
+      "posts": 4,
       "avgScore": 2
     },
     {
       "hour": 21,
-      "posts": 6,
+      "posts": 7,
       "avgScore": 2.3
     }
   ]
