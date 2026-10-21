@@ -16,7 +16,7 @@ const norm = (t) => String(t || '').trim().toLowerCase();
 // trends: safe Google Trends items; posted: data/posted.json entries.
 // Returns { candidates: [...trend, category, trafficNum], reason }.
 export function findBreaking(trends, posted, {
-  minTraffic = 100000, maxPerDay = 2, minGapMinutes = 60, maxAgeHours = 6, maxSportsPerDay = 1, now = new Date()
+  minTraffic = 100000, maxPerDay = 2, minGapMinutes = 60, maxAgeHours = 6, maxSportsPerDay = 1, maxPoliticsPerDay = 1, now = new Date()
 } = {}) {
   const seen = new Set(posted.filter((p) => !p.dryRun).map((p) => norm(p.title)));
   const today = dhakaDay(now);
@@ -29,12 +29,14 @@ export function findBreaking(trends, posted, {
     return { candidates: [], reason: `last post was only ${Math.round((now - last) / 60000)} min ago (need ${minGapMinutes})` };
   }
   const sportsToday = todays.filter((p) => p.category === 'sports').length;
+  const politicsToday = todays.filter((p) => p.category === 'politics').length;
   const candidates = trends
     .map((t) => ({ ...t, trafficNum: parseTraffic(t.traffic), category: t.category || guessCategory(`${t.title} ${t.context}`) }))
     .filter((t) => t.trafficNum >= minTraffic)
     .filter((t) => !seen.has(norm(t.title)))
     .filter((t) => !t.pubDate || Number.isNaN(Date.parse(t.pubDate)) || (now - Date.parse(t.pubDate)) <= maxAgeHours * 3600000)
     .filter((t) => !(t.category === 'sports' && sportsToday >= maxSportsPerDay))
+    .filter((t) => !(t.category === 'politics' && politicsToday >= maxPoliticsPerDay))
     .sort((a, b) => b.trafficNum - a.trafficNum);
   return { candidates, reason: candidates.length ? '' : `no new topic at ${minTraffic.toLocaleString('en')}+ searches right now` };
 }

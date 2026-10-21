@@ -252,6 +252,26 @@ The bot then publishes via Make automatically. To go back to direct posting
 variable `PUBLISHER=graph`. Make's free plan has a monthly operations
 limit; each post uses about 3–4.
 
+## Extra topic categories: fintech, showbiz, politics
+
+Besides Google Trends and the news sections, every run searches Google News
+Bangladesh (last 24 hours, Bangla + English) for three extra categories:
+
+- **fintech** — payment industry, mobile banking/MFS (bKash, Nagad, Rocket,
+  Upay), digital banks, wallets, Bangla QR.
+- **showbiz** — movies and the film industry, actors and actresses.
+  Work news only (films, releases, awards, songs); never rumours,
+  relationships or private life.
+- **politics** — political and government news, written strictly neutral
+  (no opinions, no sides, attributed to the news source, closing question
+  about daily life). Violence, protests, election disputes and accusations
+  are still skipped. **At most 1 politics post a day** (scheduled or breaking).
+
+Variables:
+- `TOPIC_CATEGORIES` — default `fintech,showbiz,politics`; list fewer, or
+  `none` to turn the searches off.
+- `MAX_POLITICS_PER_DAY` — default `1`; `0` = no politics posts at all.
+
 ## The brain (weekly learning)
 
 `.github/workflows/learn.yml` runs every Sunday 23:00 Bangladesh time. It

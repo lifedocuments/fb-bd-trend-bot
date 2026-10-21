@@ -104,6 +104,60 @@ const NEWS_SECTIONS = {
   NATION: 'news'
 };
 
+// Category searches on Google News Bangladesh (Bangla + English). Each item
+// already knows its category, like the section feeds below.
+export const CATEGORY_SEARCHES = {
+  fintech: [
+    ['বাংলা কিউআর', 'bn'], ['মোবাইল ব্যাংকিং', 'bn'], ['ডিজিটাল ব্যাংক', 'bn'], ['ডিজিটাল পেমেন্ট', 'bn'],
+    ['বিকাশ নগদ', 'bn'], ['ওয়ালেট লেনদেন', 'bn'], ['digital bank Bangladesh', 'en'], ['MFS Bangladesh', 'en']
+  ],
+  showbiz: [
+    ['সিনেমা', 'bn'], ['চলচ্চিত্র', 'bn'], ['নায়িকা', 'bn'], ['নায়ক', 'bn'], ['অভিনেত্রী', 'bn'], ['ঢালিউড', 'bn']
+  ],
+  politics: [
+    ['রাজনীতি', 'bn'], ['সরকার সিদ্ধান্ত', 'bn'], ['নির্বাচন কমিশন', 'bn']
+  ]
+};
+
+export async function fetchCategoryNews(categories, { maxAgeHours = 24, perQuery = 2, perCategory = 4 } = {}) {
+  const out = [];
+  const seen = new Set();
+  for (const cat of categories) {
+    const queries = CATEGORY_SEARCHES[cat];
+    if (!queries) continue;
+    let got = 0;
+    for (const [q, lang] of queries) {
+      if (got >= perCategory) break;
+      const loc = lang === 'en' ? 'hl=en-BD&gl=BD&ceid=BD:en' : 'hl=bn&gl=BD&ceid=BD:bn';
+      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q + ' when:1d')}&${loc}`;
+      try {
+        const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; fb-bd-trend-bot/1.0)' } });
+        if (!res.ok) { console.warn(`[trends] Google News search "${q}" returned HTTP ${res.status}`); continue; }
+        const xml = await res.text();
+        let n = 0;
+        for (const chunk of splitItems(xml)) {
+          if (n >= perQuery || got >= perCategory) break;
+          const raw = extractAll(chunk, 'title')[0] || '';
+          const link = extractAll(chunk, 'link')[0] || '';
+          const source = (chunk.match(/<source[^>]*>([\s\S]*?)<\/source>/) || [])[1] || '';
+          const pub = extractAll(chunk, 'pubDate')[0] || '';
+          if (pub && Date.now() - new Date(pub).getTime() > maxAgeHours * 3600000) continue;
+          const src = decodeXmlEntities(source.trim());
+          const headline = src && raw.endsWith(' - ' + src) ? raw.slice(0, -(src.length + 3)).trim() : raw.replace(/\s+-\s+[^-]+$/, '').trim();
+          const key = headline.toLowerCase().replace(/\s+/g, ' ');
+          if (!headline || seen.has(key)) continue;
+          seen.add(key);
+          out.push({ title: headline, traffic: '', picture: '', context: headline, newsUrl: link, newsTitle: headline, newsSource: src, category: cat, origin: 'news' });
+          n++; got++;
+        }
+      } catch (e) {
+        console.warn(`[trends] Could not search Google News for "${q}": ${e.message}`);
+      }
+    }
+  }
+  return out;
+}
+
 export async function fetchTopicNews(sections, { maxAgeHours = 24, perSection = 4 } = {}) {
   const out = [];
   for (const sec of sections) {

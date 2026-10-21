@@ -199,13 +199,17 @@ export async function writeTrendPost({ trend, language = 'bn', pageName, audienc
     `You run the Facebook Page "${pageName}". Its audience is ${who} living in Bangladesh. You turn what's trending in Bangladesh into short, engaging posts for them.`,
     `Today is ${todayInDhaka()} (Bangladesh time).`,
     'STEP 1 - decide whether to skip. Set "skip": true if ANY of these apply:',
-    '- the topic is about a death, disaster, accident, crime, violence, war, or political unrest;',
-    '- it is partisan politics, an election dispute, or religiously divisive;',
+    '- the topic is about a death, disaster, accident, crime, violence, war, or political unrest (protests, clashes, arrests, strikes);',
+    '- it is an election dispute, an accusation against a party or politician, a court case about a politician, or religiously divisive;',
+    '- (celebrities) it is a rumour, affair, marriage/divorce, private life, scandal, leaked photo/video, or about someone\'s body or looks;',
     '- it has no real connection to life, interests, sport, entertainment, shopping, tech or culture of people in Bangladesh;',
     '- it is adult/18+ content, gambling or betting, or would not suit a family-friendly business Page.',
     'STEP 2 - if not skipped, write the post:',
     langInstruction,
     `Write for ${who}: practical, relatable, everyday-life angles (work, family, money, food, cricket, entertainment, tech, festivals). Not childish, no teen slang.`,
+    'POLITICS / GOVERNMENT NEWS (allowed only if not skipped above): stay strictly NEUTRAL. State only what the headlines say, attributed (e.g. "প্রতিবেদন অনুযায়ী..."). No opinion, no praise or criticism of any party, politician or government, no predictions, no emotional or loaded words. Close with a question about how it affects daily life (prices, jobs, services), never "who is right" or "do you support". If it cannot be written neutrally, skip it.',
+    'SHOWBIZ (movies, actors, actresses): only work news — films, shooting, releases, trailers, box office, awards, songs. Never rumours, relationships or private life.',
+    'FINTECH (payments, mobile banking, digital banks, wallets): explain simply what it means for ordinary users and small shops. Never give financial advice, never promise profit, never say one company is better than another.',
     'FACTS: use ONLY facts stated in the topic and headlines given. Never invent dates, scores, prices, places, quotes or claims like "today". If the headlines give little detail, write a light question or conversation-starter about the topic instead of stating facts.',
     'End with one short, natural question that invites people to share their own opinion or experience in the comments (e.g. "আপনার প্রিয় কোনটা?"). Never ask people to like, share, tag or type something to win — Facebook reduces reach for that kind of engagement bait.',
     'Format: 2-4 short sentences including the closing question, then exactly 2 relevant hashtags on a new line (the Page\'s brand hashtag is added automatically). No markdown, no asterisks, 2-4 emoji max, no quotation marks around the post.',
@@ -261,8 +265,8 @@ export async function writeTrendPost({ trend, language = 'bn', pageName, audienc
 // null if the AI isn't available (caller then uses keyword guesses).
 export async function classifyTopics(items) {
   if (!items.length) return [];
-  const cats = 'sports, entertainment, tech, business, lifestyle, culture, news, other';
-  const system = `You label Bangladeshi trending search topics with ONE category each from: ${cats}. "sports" includes cricket and football players, teams and matches. Reply with ONLY JSON: {"categories": ["...", ...]} in the same order as the input.`;
+  const cats = 'sports, showbiz, entertainment, fintech, tech, business, politics, lifestyle, culture, news, other';
+  const system = `You label Bangladeshi trending search topics with ONE category each from: ${cats}. "sports" includes cricket and football players, teams and matches. "showbiz" = movies, film industry, actors and actresses. "entertainment" = music, OTT, TV, social media stars. "fintech" = payments, mobile banking/MFS (bKash, Nagad, Rocket, Upay), digital banks, wallets, QR payments. "politics" = political parties, politicians, government decisions, elections. Reply with ONLY JSON: {"categories": ["...", ...]} in the same order as the input.`;
   const user = items.map((t, i) => `${i + 1}. ${t.title}${t.context ? ' — ' + t.context.slice(0, 160) : ''}`).join('\n');
   try {
     const raw = await callLLM({ system, user, maxTokens: 300, json: true });

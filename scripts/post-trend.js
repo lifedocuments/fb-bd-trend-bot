@@ -9,7 +9,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchBdTrends, fetchTopicNews } from './lib/trends.js';
+import { fetchBdTrends, fetchTopicNews, fetchCategoryNews } from './lib/trends.js';
 import { orderForVariety, guessCategory } from './lib/variety.js';
 import { filterSafeTrends } from './lib/safety.js';
 import { writeTrendPost, classifyTopics } from './lib/claude.js';
@@ -38,6 +38,12 @@ const PAGE_NAME = process.env.PAGE_NAME || 'our Page';
 const AUDIENCE = process.env.TARGET_AUDIENCE || 'Bangladeshi adults aged 20-50';
 const BRAND_HASHTAG = process.env.BRAND_HASHTAG || '#SakinMartBD';
 const MAX_SPORTS_PER_DAY = process.env.MAX_SPORTS_PER_DAY ? Number(process.env.MAX_SPORTS_PER_DAY) : 1;
+const MAX_POLITICS_PER_DAY = process.env.MAX_POLITICS_PER_DAY !== undefined && process.env.MAX_POLITICS_PER_DAY !== '' ? Number(process.env.MAX_POLITICS_PER_DAY) : 1;
+// Extra topic categories searched on Google News (set TOPIC_CATEGORIES=none to turn off, or list e.g. "fintech,showbiz").
+const TOPIC_CATEGORIES = /^none$/i.test(process.env.TOPIC_CATEGORIES || '')
+  ? []
+  : (process.env.TOPIC_CATEGORIES || 'fintech,showbiz,politics').toLowerCase().split(/[\s,]+/).filter(Boolean)
+      .filter((c) => !(c === 'politics' && MAX_POLITICS_PER_DAY <= 0));
 const TOPIC_FEEDS = /^none$/i.test(process.env.TOPIC_FEEDS || '')
   ? []
   : (process.env.TOPIC_FEEDS || 'ENTERTAINMENT,TECHNOLOGY,BUSINESS').toUpperCase().split(/[\s,]+/).filter(Boolean);
@@ -185,8 +191,15 @@ async function main() {
       newsPool = filterSafeTrends(news).filter((t) => !postedTitles.has(normalizeTitle(t.title)));
       console.log(`[post-trend] ${newsPool.length} fresh stories from Google News sections (${TOPIC_FEEDS.join(', ')}).`);
     }
-    const { ordered, todayCounts, lastCategory, droppedSports } = orderForVariety([...trendPool, ...newsPool], posted, { maxSportsPerDay: MAX_SPORTS_PER_DAY, categoryWeights: learnings.weights });
-    console.log(`[post-trend] Variety: today so far ${JSON.stringify(todayCounts)}, last post was "${lastCategory || 'none'}"${droppedSports ? `, holding back ${droppedSports} sports topic(s) (daily limit ${MAX_SPORTS_PER_DAY})` : ''}.`);
+    if (TOPIC_CATEGORIES.length) {
+      const extra = filterSafeTrends(await fetchCategoryNews(TOPIC_CATEGORIES))
+        .filter((t) => !postedTitles.has(normalizeTitle(t.title)) && !newsPool.some((n) => normalizeTitle(n.title) === normalizeTitle(t.title)));
+      newsPool.push(...extra);
+      const by = extra.reduce((m, t) => ((m[t.category] = (m[t.category] || 0) + 1), m), {});
+      console.log(`[post-trend] ${extra.length} fresh stories from category searches ${JSON.stringify(by)}.`);
+    }
+    const { ordered, todayCounts, lastCategory, droppedSports, droppedPolitics } = orderForVariety([...trendPool, ...newsPool], posted, { maxSportsPerDay: MAX_SPORTS_PER_DAY, maxPoliticsPerDay: MAX_POLITICS_PER_DAY, categoryWeights: learnings.weights });
+    console.log(`[post-trend] Variety: today so far ${JSON.stringify(todayCounts)}, last post was "${lastCategory || 'none'}"${droppedSports ? `, holding back ${droppedSports} sports topic(s) (daily limit ${MAX_SPORTS_PER_DAY})` : ''}${droppedPolitics ? `, holding back ${droppedPolitics} politics topic(s) (daily limit ${MAX_POLITICS_PER_DAY})` : ''}.`);
     candidates.push(...ordered.map((t) => ({ trend: t, evergreen: false })));
     if (EVERGREEN_ON) {
       const recentEvergreen = new Set(posted.filter((p) => p.evergreen).slice(-(EVERGREEN_TOPICS.length - 1)).map((p) => p.title));
