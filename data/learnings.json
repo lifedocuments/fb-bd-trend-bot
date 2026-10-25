@@ -1,23 +1,25 @@
 {
-  "updatedAt": "2026-10-18T17:14:03.079Z",
-  "basedOnPosts": 25,
+  "updatedAt": "2026-10-25T17:16:06.761Z",
+  "basedOnPosts": 48,
   "source": "AI",
   "tips": [
-    "Focus on business and market-related topics as they attract higher engagement.",
-    "Keep headlines direct and informative without using exaggerated claims.",
-    "Maintain a professional and informative tone in the post body.",
-    "Avoid using reels for lifestyle topics based on current performance.",
-    "Schedule important posts around the morning slot for better visibility."
+    "Focus more on business and practical updates as they attract higher engagement.",
+    "Keep headlines straightforward, informative, and relevant to the core topic.",
+    "Maintain a professional and helpful tone across all posts.",
+    "Prefer photo posts over reels based on current performance data.",
+    "End posts with a simple, natural question related to the topic to encourage comments."
   ],
   "insights": [
-    "ব্যবসা ও অর্থনীতি সম্পর্কিত পোস্টগুলোতে তুলনামূলক বেশি এনগেজমেন্ট পাওয়া গেছে।",
-    "লাইফস্টাইল ক্যাটাগরির রিল পোস্টটি খুব একটা সাড়া ফেলতে পারেনি।",
-    "সকাল ৯টার দিকে প্রকাশিত পোস্টগুলোর পারফরম্যান্স সবচেয়ে ভালো ছিল।"
+    "বিজনেস বা ব্যবসা সংক্রান্ত পোস্টগুলোতে তুলনামূলকভাবে বেশি এনগেজমেন্ট পাওয়া গেছে।",
+    "রিলের তুলনায় ছবি বা ফটো ফরম্যাটের পোস্টগুলো ভালো ফল দিয়েছে।",
+    "সকাল ৯টার দিকে করা পোস্টগুলোর পারফরম্যান্স সন্তোষজনক ছিল।",
+    "তথ্যভিত্তিক ও প্রাসঙ্গিক আপডেট পাঠক বেশি পছন্দ করছেন।"
   ],
   "weights": {
     "sports": 1,
-    "tech": 1.1,
-    "business": 1.4,
+    "entertainment": 1,
+    "tech": 1,
+    "business": 1.2,
     "news": 0.9
   }
 }

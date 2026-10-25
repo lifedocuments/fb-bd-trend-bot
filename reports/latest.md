@@ -1,23 +1,25 @@
-# Weekly report — 2026-10-18
+# Weekly report — 2026-10-25
 
-Measured **25 posts** from the last 30 days. Average score **2.5** (reactions + 2×comments + 3×shares).
+Measured **48 posts** from the last 30 days. Average score **2.5** (reactions + 2×comments + 3×shares).
 
 ## What the bot learned
-- ব্যবসা ও অর্থনীতি সম্পর্কিত পোস্টগুলোতে তুলনামূলক বেশি এনগেজমেন্ট পাওয়া গেছে।
-- লাইফস্টাইল ক্যাটাগরির রিল পোস্টটি খুব একটা সাড়া ফেলতে পারেনি।
-- সকাল ৯টার দিকে প্রকাশিত পোস্টগুলোর পারফরম্যান্স সবচেয়ে ভালো ছিল।
+- বিজনেস বা ব্যবসা সংক্রান্ত পোস্টগুলোতে তুলনামূলকভাবে বেশি এনগেজমেন্ট পাওয়া গেছে।
+- রিলের তুলনায় ছবি বা ফটো ফরম্যাটের পোস্টগুলো ভালো ফল দিয়েছে।
+- সকাল ৯টার দিকে করা পোস্টগুলোর পারফরম্যান্স সন্তোষজনক ছিল।
+- তথ্যভিত্তিক ও প্রাসঙ্গিক আপডেট পাঠক বেশি পছন্দ করছেন।
 
 ## New writing lessons (used from now on)
-- Focus on business and market-related topics as they attract higher engagement.
-- Keep headlines direct and informative without using exaggerated claims.
-- Maintain a professional and informative tone in the post body.
-- Avoid using reels for lifestyle topics based on current performance.
-- Schedule important posts around the morning slot for better visibility.
+- Focus more on business and practical updates as they attract higher engagement.
+- Keep headlines straightforward, informative, and relevant to the core topic.
+- Maintain a professional and helpful tone across all posts.
+- Prefer photo posts over reels based on current performance data.
+- End posts with a simple, natural question related to the topic to encourage comments.
 
 ## Category weights (above 1 = chosen more often)
 - sports: 1
-- tech: 1.1
-- business: 1.4
+- entertainment: 1
+- tech: 1
+- business: 1.2
 - news: 0.9
 
 ## Top posts
@@ -27,26 +29,26 @@ Measured **25 posts** from the last 30 days. Average score **2.5** (reactions + 
 
 | Category | Posts | Avg score |
 |---|---|---|
-| business | 4 | 3.8 |
-| tech | 4 | 2.8 |
-| sports | 6 | 2.5 |
-| entertainment | 2 | 2.5 |
+| business | 11 | 2.9 |
+| tech | 10 | 2.5 |
+| entertainment | 4 | 2.5 |
+| sports | 13 | 2.4 |
 | unknown | 2 | 2 |
 | news | 5 | 2 |
+| lifestyle | 2 | 2 |
 | culture | 1 | 2 |
-| lifestyle | 1 | 1 |
 
 | Format | Posts | Avg score |
 |---|---|---|
-| photo | 23 | 2.6 |
+| photo | 46 | 2.5 |
 | reel | 2 | 1.5 |
 
 | Time slot (BD hour) | Posts | Avg score |
 |---|---|---|
-| 9 | 2 | 4 |
-| none | 8 | 3 |
-| 21 | 5 | 2.2 |
-| 12 | 1 | 2 |
-| 14 | 5 | 2 |
-| 17 | 2 | 2 |
-| 19 | 2 | 2 |
+| 9 | 9 | 2.8 |
+| none | 11 | 2.8 |
+| 17 | 5 | 2.4 |
+| 21 | 10 | 2.3 |
+| 14 | 7 | 2.1 |
+| 12 | 2 | 2 |
+| 19 | 4 | 2 |
