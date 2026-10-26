@@ -705,5 +705,20 @@
     "postId": "104979441905402_1173249248547866",
     "slot": 21,
     "headline": "ব্র্যাক ব্যাংক নিয়ে আসছে দেশের প্রথম গ্রিন বন্ড"
+  },
+  {
+    "title": "এলিজা জামান",
+    "skippedAt": "2026-10-26T08:40:46.686Z",
+    "skipped": true,
+    "reason": "The topic involves a political by-election candidate, which falls under politics and elections. Per instructions, political topics must be strictly neutral or skipped if they cannot be handled with proper context, and local constituency news with political party nominations requires careful handling to avoid bias."
+  },
+  {
+    "title": "ইউরিয়া",
+    "postedAt": "2026-10-26T08:40:52.622Z",
+    "format": "photo",
+    "category": "tech",
+    "postId": "104979441905402_1173787295160728",
+    "slot": 9,
+    "headline": "যবিপ্রবির অধ্যাপকের ন্যানো ইউরিয়ার পেটেন্ট অনুমোদন"
   }
 ]
