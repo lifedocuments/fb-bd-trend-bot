@@ -1,8 +1,8 @@
 {
-  "date": "2026-10-26",
+  "date": "2026-10-27",
   "slots": [
     9,
-    12,
+    19,
     21
   ],
   "reelSlot": 9,
@@ -10,12 +10,12 @@
   "stats": [
     {
       "hour": 9,
-      "posts": 9,
-      "avgScore": 2.8
+      "posts": 10,
+      "avgScore": 2.7
     },
     {
       "hour": 12,
-      "posts": 2,
+      "posts": 3,
       "avgScore": 2
     },
     {
@@ -25,8 +25,8 @@
     },
     {
       "hour": 17,
-      "posts": 5,
-      "avgScore": 2.4
+      "posts": 6,
+      "avgScore": 2
     },
     {
       "hour": 19,
@@ -35,7 +35,7 @@
     },
     {
       "hour": 21,
-      "posts": 9,
+      "posts": 10,
       "avgScore": 2.4
     }
   ]
