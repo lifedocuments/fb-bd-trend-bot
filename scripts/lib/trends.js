@@ -116,6 +116,10 @@ export const CATEGORY_SEARCHES = {
   ],
   politics: [
     ['রাজনীতি', 'bn'], ['সরকার সিদ্ধান্ত', 'bn'], ['নির্বাচন কমিশন', 'bn']
+  ],
+  discovery: [
+    ['নতুন আবিষ্কার বিজ্ঞানী', 'bn'], ['মহাকাশ', 'bn'], ['নাসা', 'bn'], ['প্রত্নতত্ত্ব', 'bn'],
+    ['scientists discover', 'en'], ['space discovery', 'en'], ['archaeologists discover', 'en']
   ]
 };
 

@@ -14,6 +14,7 @@ import { orderForVariety, guessCategory } from './lib/variety.js';
 import { filterSafeTrends } from './lib/safety.js';
 import { writeTrendPost, classifyTopics } from './lib/claude.js';
 import { EVERGREEN_TOPICS } from './lib/evergreen.js';
+import { nextProphetStory, STORY_IMAGE_QUERIES } from './lib/prophets.js';
 import { specialDayFor } from './lib/special-days.js';
 import { makePhotocard } from './lib/photocard.js';
 import { pickImageForTrend } from './lib/image.js';
@@ -37,12 +38,16 @@ const LANGUAGE = process.env.POST_LANGUAGE || 'bn';
 const PAGE_NAME = process.env.PAGE_NAME || 'our Page';
 const AUDIENCE = process.env.TARGET_AUDIENCE || 'Bangladeshi adults aged 20-50';
 const BRAND_HASHTAG = process.env.BRAND_HASHTAG || '#SakinMartBD';
-const MAX_SPORTS_PER_DAY = process.env.MAX_SPORTS_PER_DAY ? Number(process.env.MAX_SPORTS_PER_DAY) : 1;
+// Sports posts are off by default (set MAX_SPORTS_PER_DAY=1 to allow one a day again).
+const MAX_SPORTS_PER_DAY = process.env.MAX_SPORTS_PER_DAY !== undefined && process.env.MAX_SPORTS_PER_DAY !== '' ? Number(process.env.MAX_SPORTS_PER_DAY) : 0;
+// Prophet stories: STORY_MODE=daily (default) or off; posted at the first scheduled run from STORY_FROM_HOUR (BD time).
+const STORY_ON = String(process.env.STORY_MODE || 'daily').toLowerCase() !== 'off';
+const STORY_FROM_HOUR = process.env.STORY_FROM_HOUR ? Number(process.env.STORY_FROM_HOUR) : 17;
 const MAX_POLITICS_PER_DAY = process.env.MAX_POLITICS_PER_DAY !== undefined && process.env.MAX_POLITICS_PER_DAY !== '' ? Number(process.env.MAX_POLITICS_PER_DAY) : 1;
 // Extra topic categories searched on Google News (set TOPIC_CATEGORIES=none to turn off, or list e.g. "fintech,showbiz").
 const TOPIC_CATEGORIES = /^none$/i.test(process.env.TOPIC_CATEGORIES || '')
   ? []
-  : (process.env.TOPIC_CATEGORIES || 'fintech,showbiz,politics').toLowerCase().split(/[\s,]+/).filter(Boolean)
+  : (process.env.TOPIC_CATEGORIES || 'fintech,showbiz,politics,discovery').toLowerCase().split(/[\s,]+/).filter(Boolean)
       .filter((c) => !(c === 'politics' && MAX_POLITICS_PER_DAY <= 0));
 const TOPIC_FEEDS = /^none$/i.test(process.env.TOPIC_FEEDS || '')
   ? []
@@ -179,6 +184,17 @@ async function main() {
       console.log(`[post-trend] Today is a special day: ${special.name}.`);
       candidates.push({ trend: { title: special.name, context: '' }, special });
     }
+    // One true prophet story a day, at the first scheduled post from STORY_FROM_HOUR.
+    if (STORY_ON) {
+      const dhaka = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' });
+      const hourNow = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', hour: '2-digit', hour12: false }).format(new Date()));
+      const storyToday = posted.some((p) => p.story && !p.skipped && p.postedAt && dhaka.format(new Date(p.postedAt)) === dhaka.format(new Date()));
+      if (!storyToday && hourNow >= STORY_FROM_HOUR) {
+        const story = nextProphetStory(posted.filter((p) => !p.skipped));
+        console.log(`[post-trend] Today's prophet story: ${story.bn} (${story.key}).`);
+        candidates.push({ trend: { title: story.bn, context: '', category: 'islamic', origin: 'story' }, story });
+      }
+    }
     // Sort trends into categories (one cheap AI call; keyword guess as backup),
     // add non-sports news sections, then order everything for variety.
     const topTrends = freshTrends.slice(0, 10);
@@ -212,9 +228,9 @@ async function main() {
     return;
   }
 
-  for (const { trend, evergreen = false, special: sp = null, breaking = false } of candidates) {
+  for (const { trend, evergreen = false, special: sp = null, breaking = false, story = null } of candidates) {
     const kind = sp ? 'special' : evergreen ? 'evergreen' : 'trend';
-    console.log(`[post-trend] Trying ${sp ? 'special day' : evergreen ? 'evergreen topic' : trend.origin === 'news' ? 'news story' : 'trend'}: "${trend.title}"${trend.category ? ` [${trend.category}]` : ''}`);
+    console.log(`[post-trend] Trying ${story ? 'prophet story' : sp ? 'special day' : evergreen ? 'evergreen topic' : trend.origin === 'news' ? 'news story' : 'trend'}: "${trend.title}"${trend.category ? ` [${trend.category}]` : ''}`);
 
     let caption;
     let imageQuery = '';
@@ -223,7 +239,7 @@ async function main() {
       caption = `[DRY RUN] Would write a ${LANGUAGE} caption about: ${trend.title}`;
     } else {
       const post = await writeTrendPost({
-        trend, evergreen, special: sp, language: LANGUAGE, pageName: PAGE_NAME, audience: AUDIENCE, brandHashtag: BRAND_HASHTAG, learnedTips: learnings.tips
+        trend, evergreen, special: sp, story, language: LANGUAGE, pageName: PAGE_NAME, audience: AUDIENCE, brandHashtag: BRAND_HASHTAG, learnedTips: learnings.tips
       });
       if (post.skip) {
         console.log(`[post-trend] Skipping "${trend.title}": ${post.reason}. Trying next candidate.`);
@@ -235,7 +251,7 @@ async function main() {
         continue;
       }
       caption = post.caption;
-      imageQuery = post.imageQuery;
+      imageQuery = story ? STORY_IMAGE_QUERIES[Math.floor(Math.random() * STORY_IMAGE_QUERIES.length)] : post.imageQuery;
       headline = post.headline;
       console.log(`[post-trend] Image search phrase: "${imageQuery}"`);
     }
@@ -255,7 +271,7 @@ async function main() {
       visual = {
         imageUrl,
         headline,
-        label: sp ? 'বিশেষ দিন' : evergreen ? 'আলাপ' : breaking ? 'এখন ট্রেন্ডিং' : 'ট্রেন্ডিং',
+        label: story ? 'নবীদের সত্য ঘটনা' : sp ? 'বিশেষ দিন' : evergreen ? 'আলাপ' : breaking ? 'এখন ট্রেন্ডিং' : trend.category === 'discovery' ? 'আবিষ্কার' : 'ট্রেন্ডিং',
         credit: image?.cardCredit || '',
         pageName: PAGE_NAME,
         mood: sp?.mood === 'solemn' ? 'solemn' : 'normal'
@@ -351,7 +367,7 @@ async function main() {
 
     const entry = {
       title: trend.title, postedAt: new Date().toISOString(), format,
-      category: sp ? 'culture' : evergreen ? 'lifestyle' : (trend.category || 'news')
+      category: story ? 'islamic' : sp ? 'culture' : evergreen ? 'lifestyle' : (trend.category || 'news')
     };
     const postId = commentTargets(result, pageId, format)[0];
     if (postId && AUTO_PUBLISH) entry.postId = postId;
@@ -361,10 +377,11 @@ async function main() {
     if (format === 'reel' && result.video_id) entry.videoId = String(result.video_id);
     if (evergreen) entry.evergreen = true;
     if (sp) entry.special = sp.key;
+    if (story) entry.story = story.key;
     posted.push(entry);
     await savePostedLog(posted);
     const kindLabel = format === 'reel' ? 'রিল' : 'পোস্ট';
-    const tags = [breaking ? 'ব্রেকিং' : '', sp ? 'বিশেষ দিন' : '', entry.category, SLOT_HOUR ? `${SLOT_HOUR}:00` : ''].filter(Boolean).join(' · ');
+    const tags = [breaking ? 'ব্রেকিং' : '', sp ? 'বিশেষ দিন' : '', story ? 'নবীদের গল্প' : '', entry.category, SLOT_HOUR ? `${SLOT_HOUR}:00` : ''].filter(Boolean).join(' · ');
     await notify(AUTO_PUBLISH
       ? `✅ নতুন ${kindLabel} প্রকাশিত (${tags})\n${headline || trend.title}\n${postLink({ format, postId: entry.postId, videoId: entry.videoId, pageId })}`
       : `📝 ড্রাফট সেভ হয়েছে (${tags})\n${headline || trend.title}\nMeta Business Suite → Drafts`);

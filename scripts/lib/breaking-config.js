@@ -6,7 +6,7 @@ export function breakingOptions() {
     maxPerDay: num(process.env.BREAKING_MAX_PER_DAY, 2),
     minGapMinutes: num(process.env.BREAKING_MIN_GAP_MINUTES, 60),
     maxAgeHours: num(process.env.BREAKING_MAX_AGE_HOURS, 6),
-    maxSportsPerDay: num(process.env.MAX_SPORTS_PER_DAY, 1),
+    maxSportsPerDay: num(process.env.MAX_SPORTS_PER_DAY, 0),
     maxPoliticsPerDay: num(process.env.MAX_POLITICS_PER_DAY, 1)
   };
 }

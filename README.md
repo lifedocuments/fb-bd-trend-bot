@@ -252,6 +252,21 @@ The bot then publishes via Make automatically. To go back to direct posting
 variable `PUBLISHER=graph`. Make's free plan has a monthly operations
 limit; each post uses about 3–4.
 
+## Prophet stories, discoveries, and no sports
+
+- **Sports posts are off** by default (`MAX_SPORTS_PER_DAY` default `0`, for
+  scheduled and breaking posts). Set it to `1` to allow one a day again.
+- **Global discovery** — new scientific discoveries, space/NASA, archaeology
+  and research news (Google News, Bangla + English), explained simply and
+  attributed. Part of `TOPIC_CATEGORIES` (default `fintech,showbiz,politics,discovery`).
+- **True stories of the prophets (নবী ও রাসূলদের সত্য ঘটনা)** — one a day, at the
+  first scheduled post from 5 PM (`STORY_FROM_HOUR`, default `17`), rotating
+  through 25 well-known stories from the Quran in `scripts/lib/prophets.js`
+  (edit freely). The AI retells ONLY the summary given, with the source surah
+  and honorifics; no invented details, quotes, verse/hadith numbers, rulings or
+  sectarian views; no "write Amin / share" bait. Photos are always calm,
+  non-figurative scenes — never people. `STORY_MODE=off` turns it off.
+
 ## Extra topic categories: fintech, showbiz, politics
 
 Besides Google Trends and the news sections, every run searches Google News

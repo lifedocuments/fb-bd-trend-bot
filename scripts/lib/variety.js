@@ -3,13 +3,15 @@
 //   * at most MAX_SPORTS_PER_DAY sports posts per day (Bangladesh time)
 //   * never the same category twice in a row when there's an alternative
 //   * prefer the category posted least today
-export const CATEGORIES = ['sports', 'showbiz', 'entertainment', 'fintech', 'tech', 'business', 'politics', 'lifestyle', 'culture', 'news', 'other'];
+export const CATEGORIES = ['sports', 'showbiz', 'entertainment', 'fintech', 'discovery', 'tech', 'business', 'politics', 'islamic', 'lifestyle', 'culture', 'news', 'other'];
 
 const SPORTS_RE = /cricket|ক্রিকেট|\bvs\.?\b|বনাম|\bbpl\b|\bipl\b|\bpsl\b|t20|টি-?টোয়েন্টি|\bodi\b|ওয়ানডে|\btest\b|টেস্ট|world cup|বিশ্বকাপ|football|ফুটবল|\bfifa\b|premier league|la ?liga|champions league|\bmatch\b|ম্যাচ|live score|স্কোর|real madrid|barcelona|man(chester)? (united|city)|liverpool|arsenal|messi|ronaldo|neymar|shakib|সাকিব|tamim|তামিম|mushfiq|মুশফিক|taskin|তাসকিন|litton|লিটন|shanto|শান্ত|mustafiz|মুস্তাফিজ|mehidy|মিরাজ|hockey|tennis|badminton|kabaddi|কাবাডি|olympic|অলিম্পিক|\bnba\b|\bf1\b|formula 1/i;
 // Movie world, actors and actresses ("showbiz") — checked before general entertainment.
 const SHOWBIZ_RE = /movie|film|cinema|সিনেমা|চলচ্চিত্র|ছবির শুটিং|actor|actress|অভিনেতা|অভিনেত্রী|নায়ক|নায়িকা|dhallywood|ঢালিউড|bollywood|বলিউড|tollywood|টালিউড|hollywood|হলিউড|shakib khan|শাকিব খান|box ?office|বক্স অফিস|trailer|ট্রেইলার|teaser|টিজার|premiere|প্রিমিয়ার|শুটিং/i;
 // Payment industry, digital banking, wallets.
 const FINTECH_RE = /bkash|বিকাশ|nagad|নগদ|rocket|রকেট|upay|উপায়|tallypay|টালিপে|\bmfs\b|mobile financial|মোবাইল ব্যাংকিং|mobile banking|digital bank|ডিজিটাল ব্যাংক|neobank|wallet|ওয়ালেট|e-?wallet|bangla ?qr|বাংলা কিউআর|\bqr\b|কিউআর|payment|পেমেন্ট|cashless|ক্যাশলেস|fintech|ফিনটেক|card payment|কার্ড|transaction|লেনদেন|remittance app|binimoy|বিনিময়|\bnpsb\b|instant payment/i;
+// Science, space and archaeology discoveries.
+const DISCOVERY_RE = /discover|আবিষ্কার|space|মহাকাশ|nasa|নাসা|planet|গ্রহ|galaxy|ছায়াপথ|telescope|টেলিস্কোপ|fossil|জীবাশ্ম|dinosaur|ডাইনোসর|archaeolog|প্রত্নতত্ত্ব|প্রত্নতাত্ত্বিক|scientist|বিজ্ঞানী|researchers? (find|found)|গবেষকরা|গবেষণায় দেখা|asteroid|গ্রহাণু|black hole|ব্ল্যাক হোল/i;
 // Politics and government.
 const POLITICS_RE = /politic|রাজনীতি|রাজনৈতিক|election|নির্বাচন|parliament|সংসদ|minister|মন্ত্রী|উপদেষ্টা|adviser|government|সরকার|party|দল\b|বিএনপি|\bbnp\b|আওয়ামী|awami|জামায়াত|jamaat|এনসিপি|\bncp\b|প্রধানমন্ত্রী|prime minister|president|রাষ্ট্রপতি|ভোট|vote|policy|নীতি/i;
 const ENT_RE = /movie|film|সিনেমা|ছবি|নাটক|drama|song|গান|singer|শিল্পী|actor|actress|অভিনেতা|অভিনেত্রী|নায়ক|নায়িকা|ott|chorki|চরকি|netflix|hoichoi|web ?series|ওয়েব সিরিজ|concert|কনসার্ট|tiktok|youtube|ইউটিউব|bollywood|বলিউড|dhallywood|ঢালিউড|shakib khan|শাকিব খান|award|পুরস্কার/i;
@@ -21,6 +23,7 @@ export function guessCategory(text) {
   if (SPORTS_RE.test(t)) return 'sports';
   if (FINTECH_RE.test(t)) return 'fintech';
   if (SHOWBIZ_RE.test(t)) return 'showbiz';
+  if (DISCOVERY_RE.test(t)) return 'discovery';
   if (POLITICS_RE.test(t)) return 'politics';
   if (ENT_RE.test(t)) return 'entertainment';
   if (TECH_RE.test(t)) return 'tech';
