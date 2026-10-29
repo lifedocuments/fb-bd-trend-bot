@@ -1,0 +1,132 @@
+name: Post a BD trend to Facebook
+
+on:
+  schedule:
+    # Smart timing: the bot wakes at 6 candidate times (Bangladesh time) and
+    # its planner picks which ones to post in each day (see
+    # scripts/lib/schedule.js). Cron is UTC = BD hour - 6. Runs that aren't
+    # picked stop after a few seconds. GitHub may start runs a little late.
+    - cron: '0 3 * * *'    # 09:00 BD
+    - cron: '0 6 * * *'    # 12:00 BD
+    - cron: '0 8 * * *'    # 14:00 BD
+    - cron: '0 11 * * *'   # 17:00 BD
+    - cron: '0 13 * * *'   # 19:00 BD
+    - cron: '0 15 * * *'   # 21:00 BD
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no AI/Unsplash/Facebook calls, just fetch+filter trends)'
+        type: boolean
+        default: false
+      reel:
+        description: 'Post this one as a Reel'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: fb-page-posting
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Telegram commands
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/telegram-commands.js
+
+      - name: Decide whether to post now
+        id: slot
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
+          INPUT_REEL: ${{ github.event.inputs.reel }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          SMART_TIMING: ${{ vars.SMART_TIMING }}
+          POSTS_PER_DAY: ${{ vars.POSTS_PER_DAY }}
+          REELS: ${{ vars.REELS }}
+        run: node scripts/check-slot.js
+
+      # Photocards/Reels are drawn with Python + Pillow (its wheel bundles the
+      # Bangla text-shaping engine); Reels are encoded with ffmpeg. If any of
+      # this fails, posting still works with a plain photo.
+      - uses: actions/setup-python@v6
+        if: steps.slot.outputs.post == 'true'
+        continue-on-error: true
+        with:
+          python-version: '3.12'
+
+      - name: Install photocard tools
+        if: steps.slot.outputs.post == 'true'
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y -qq libfribidi0 >/dev/null 2>&1 || true
+          python3 -m pip install --quiet pillow==12.1.1 || python3 -m pip install --quiet --break-system-packages pillow==12.1.1
+
+      - name: Install video tools
+        if: steps.slot.outputs.reel == 'true'
+        continue-on-error: true
+        run: |
+          command -v ffmpeg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null)
+          ffmpeg -version | head -1
+
+      - name: Run posting script
+        if: steps.slot.outputs.post == 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          PAGE_NAME: ${{ vars.PAGE_NAME }}
+          TARGET_AUDIENCE: ${{ vars.TARGET_AUDIENCE }}
+          BRAND_HASHTAG: ${{ vars.BRAND_HASHTAG }}
+          EVERGREEN_FALLBACK: ${{ vars.EVERGREEN_FALLBACK }}
+          PHOTOCARDS: ${{ vars.PHOTOCARDS }}
+          NEWS_LINK_COMMENT: ${{ vars.NEWS_LINK_COMMENT }}
+          STORIES: ${{ vars.STORIES }}
+          BREAKING_MAX_PER_DAY: ${{ vars.BREAKING_MAX_PER_DAY }}
+          MAX_SPORTS_PER_DAY: ${{ vars.MAX_SPORTS_PER_DAY }}
+          TOPIC_FEEDS: ${{ vars.TOPIC_FEEDS }}
+          TOPIC_CATEGORIES: ${{ vars.TOPIC_CATEGORIES }}
+          MAX_POLITICS_PER_DAY: ${{ vars.MAX_POLITICS_PER_DAY }}
+          STORY_MODE: ${{ vars.STORY_MODE }}
+          STORY_FROM_HOUR: ${{ vars.STORY_FROM_HOUR }}
+          RECIPE_DAYS: ${{ vars.RECIPE_DAYS }}
+          RECIPE_FROM_HOUR: ${{ vars.RECIPE_FROM_HOUR }}
+          SPECIAL_DAYS: ${{ vars.SPECIAL_DAYS }}
+          POST_LANGUAGE: ${{ vars.POST_LANGUAGE }}
+          AUTO_PUBLISH: ${{ vars.AUTO_PUBLISH }}
+          ALLOW_TREND_PICTURES: ${{ vars.ALLOW_TREND_PICTURES }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          MAKE_REEL: ${{ steps.slot.outputs.reel }}
+          SLOT_HOUR: ${{ steps.slot.outputs.slot }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MAKE_WEBHOOK_URL: ${{ secrets.MAKE_WEBHOOK_URL }}
+          MAKE_SHARED_SECRET: ${{ secrets.MAKE_SHARED_SECRET }}
+          PUBLISHER: ${{ vars.PUBLISHER }}
+        run: node scripts/post-trend.js
+
+      - name: Save posting log and today's plan
+        if: always()
+        run: bash scripts/save-data.sh "Update posting log / plan [skip ci]"

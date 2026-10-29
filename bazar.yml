@@ -1,0 +1,56 @@
+name: Morning bazar price post
+
+on:
+  schedule:
+    - cron: '30 2 * * *'   # 08:30 Bangladesh time (UTC+6)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (read the prices, do not post)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fb-page-posting
+  cancel-in-progress: false
+
+jobs:
+  bazar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install card tools
+        run: |
+          sudo apt-get install -y -qq libfribidi0 >/dev/null 2>&1 || true
+          python3 -m pip install --quiet pillow==12.1.1 || python3 -m pip install --quiet --break-system-packages pillow==12.1.1
+      - name: Post today's prices
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GEMINI_PDF_MODEL: ${{ vars.GEMINI_PDF_MODEL }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          PAGE_NAME: ${{ vars.PAGE_NAME }}
+          BRAND_HASHTAG: ${{ vars.BRAND_HASHTAG }}
+          BAZAR_MODE: ${{ vars.BAZAR_MODE }}
+          TCB_PAGE_URL: ${{ vars.TCB_PAGE_URL }}
+          TCB_REPORT_URL: ${{ vars.TCB_REPORT_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MAKE_WEBHOOK_URL: ${{ secrets.MAKE_WEBHOOK_URL }}
+          MAKE_SHARED_SECRET: ${{ secrets.MAKE_SHARED_SECRET }}
+          PUBLISHER: ${{ vars.PUBLISHER }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: node scripts/post-bazar.js
+      - name: Save posting log
+        if: always()
+        run: bash scripts/save-data.sh "Bazar price post [skip ci]"
