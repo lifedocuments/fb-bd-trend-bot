@@ -192,7 +192,7 @@ export function finalizeHashtags(caption, brandHashtag = '#SakinMartBD', maxTopi
 // Decides whether a trend suits the Page, and if so writes the post and an
 // image search phrase — all in one AI call to stay well inside free limits.
 // Returns { skip: true, reason } or { skip: false, caption, imageQuery }.
-export async function writeTrendPost({ trend, language = 'bn', pageName, audience, evergreen = false, special = null, story = null, brandHashtag = '#SakinMartBD', learnedTips = [] }) {
+export async function writeTrendPost({ trend, language = 'bn', pageName, audience, evergreen = false, special = null, story = null, recipe = null, brandHashtag = '#SakinMartBD', learnedTips = [] }) {
   const langInstruction = LANGUAGE_INSTRUCTIONS[language] || LANGUAGE_INSTRUCTIONS.bn;
   const who = audience || 'Bangladeshi adults aged 20-50';
   const system = [
@@ -223,7 +223,18 @@ export async function writeTrendPost({ trend, language = 'bn', pageName, audienc
   ].join('\n');
 
   const solemn = special?.mood === 'solemn';
-  const user = story
+  const user = recipe
+    ? [
+        `SEASONAL HOME RECIPE: ${recipe.bn}`,
+        `Ingredients (use EXACTLY these, same amounts): ${recipe.ingredients.join('; ')}`,
+        `Steps (use ONLY these, same order): ${recipe.steps.join(' | ')}`,
+        'Rules for this post (they override the general length rule):',
+        '- One warm opening line (season, family, taste), then "উপকরণ:" with each ingredient on its own line starting with "• ", then "প্রণালী:" with numbered steps, then one closing question like "আপনার বাড়িতে কীভাবে বানান?".',
+        '- Do not add, remove or change any ingredient, amount, time or step. No health or medical claims. No prices. Do not mention any shop (a shop line is added separately).',
+        '- image_query is ignored for this post. Headline: the recipe name plus at most 4 warm words.',
+        '- Do not skip this.'
+      ].join('\n')
+    : story
     ? [
         `TRUE STORY OF A PROPHET (Islamic, from ${story.source}): ${story.bn}`,
         `The story to retell (ONLY these facts): ${story.summary}`,

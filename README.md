@@ -252,6 +252,26 @@ The bot then publishes via Make automatically. To go back to direct posting
 variable `PUBLISHER=graph`. Make's free plan has a monthly operations
 limit; each post uses about 3–4.
 
+## আজকের বাজারদর (morning prices) and মৌসুমি রেসিপি (seasonal recipes)
+
+**Bazar prices — every morning 08:30** (`.github/workflows/bazar.yml`, `scripts/post-bazar.js`):
+finds TCB's daily Dhaka retail price report (PDF), Gemini reads the table into
+numbers (temperature 0, never estimates), then strict checks: report from the
+last 2 days, every price a sensible number, at least 6 items, and any item that
+jumps >50% overnight is dropped. The card (`scripts/bazar-card.py`) and caption
+are built from the data — no AI writing. If anything fails, no post; a Telegram
+note says why. Variables: `BAZAR_MODE=off` stops it; `TCB_PAGE_URL` (TCB's
+daily price page) or `TCB_REPORT_URL` (a direct PDF link) if TCB moves the page;
+`GEMINI_PDF_MODEL` to use a different model for reading the PDF.
+
+**Seasonal recipes — Tuesday and Friday from 12 PM** (`scripts/lib/recipes.js`):
+18 classic Bangladeshi recipes tied to their months. The AI only rewrites the
+given ingredients and steps. List what the shop sells in `scripts/lib/shop.js`
+(`SHOP_PRODUCTS`) and recipe posts get a line like "🛒 এই রেসিপির চাল, ডাল, তেল
+পাবেন Sakin Mart Bangladesh-এ" — added by code, only for products you list.
+Variables: `RECIPE_DAYS` (default `tue,fri`; `daily` or `off`), `RECIPE_FROM_HOUR`
+(default `12`). On a day with both, the prophet story goes first.
+
 ## Prophet stories, discoveries, and no sports
 
 - **Sports posts are off** by default (`MAX_SPORTS_PER_DAY` default `0`, for

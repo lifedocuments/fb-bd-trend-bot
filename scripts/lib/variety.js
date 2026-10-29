@@ -3,7 +3,7 @@
 //   * at most MAX_SPORTS_PER_DAY sports posts per day (Bangladesh time)
 //   * never the same category twice in a row when there's an alternative
 //   * prefer the category posted least today
-export const CATEGORIES = ['sports', 'showbiz', 'entertainment', 'fintech', 'discovery', 'tech', 'business', 'politics', 'islamic', 'lifestyle', 'culture', 'news', 'other'];
+export const CATEGORIES = ['sports', 'showbiz', 'entertainment', 'fintech', 'discovery', 'tech', 'business', 'politics', 'islamic', 'recipe', 'bazar', 'lifestyle', 'culture', 'news', 'other'];
 
 const SPORTS_RE = /cricket|ক্রিকেট|\bvs\.?\b|বনাম|\bbpl\b|\bipl\b|\bpsl\b|t20|টি-?টোয়েন্টি|\bodi\b|ওয়ানডে|\btest\b|টেস্ট|world cup|বিশ্বকাপ|football|ফুটবল|\bfifa\b|premier league|la ?liga|champions league|\bmatch\b|ম্যাচ|live score|স্কোর|real madrid|barcelona|man(chester)? (united|city)|liverpool|arsenal|messi|ronaldo|neymar|shakib|সাকিব|tamim|তামিম|mushfiq|মুশফিক|taskin|তাসকিন|litton|লিটন|shanto|শান্ত|mustafiz|মুস্তাফিজ|mehidy|মিরাজ|hockey|tennis|badminton|kabaddi|কাবাডি|olympic|অলিম্পিক|\bnba\b|\bf1\b|formula 1/i;
 // Movie world, actors and actresses ("showbiz") — checked before general entertainment.

@@ -111,6 +111,8 @@ jobs:
           MAX_POLITICS_PER_DAY: ${{ vars.MAX_POLITICS_PER_DAY }}
           STORY_MODE: ${{ vars.STORY_MODE }}
           STORY_FROM_HOUR: ${{ vars.STORY_FROM_HOUR }}
+          RECIPE_DAYS: ${{ vars.RECIPE_DAYS }}
+          RECIPE_FROM_HOUR: ${{ vars.RECIPE_FROM_HOUR }}
           SPECIAL_DAYS: ${{ vars.SPECIAL_DAYS }}
           POST_LANGUAGE: ${{ vars.POST_LANGUAGE }}
           AUTO_PUBLISH: ${{ vars.AUTO_PUBLISH }}
