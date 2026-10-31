@@ -1,17 +1,17 @@
 {
-  "date": "2026-10-31",
+  "date": "2026-11-01",
   "slots": [
     9,
-    17,
+    12,
     21
   ],
-  "reelSlot": 9,
+  "reelSlot": 21,
   "reason": "best slots + 1 refresh slot",
   "stats": [
     {
       "hour": 9,
-      "posts": 14,
-      "avgScore": 2.4
+      "posts": 15,
+      "avgScore": 2.2
     },
     {
       "hour": 12,
@@ -25,8 +25,8 @@
     },
     {
       "hour": 17,
-      "posts": 6,
-      "avgScore": 2
+      "posts": 7,
+      "avgScore": 1.7
     },
     {
       "hour": 19,
@@ -35,7 +35,7 @@
     },
     {
       "hour": 21,
-      "posts": 14,
+      "posts": 15,
       "avgScore": 2.3
     }
   ]
