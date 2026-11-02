@@ -1013,5 +1013,26 @@
     "postId": "104979441905402_1181056954433762",
     "slot": 14,
     "headline": "আসছে ভিভো এস ৭০ প্রো, থাকছে শক্তিশালী প্রসেসর"
+  },
+  {
+    "title": "02",
+    "skippedAt": "2026-11-02T22:04:04.953Z",
+    "skipped": true,
+    "reason": "The trending topics are related to US stock market performance and a local US charity event, which have no direct connection to the daily life, interests, or shopping of people in Bangladesh."
+  },
+  {
+    "title": "চীন যেভাবে মার্কিন ডলারের আধিপত্য ভাঙতে যাচ্ছে",
+    "skippedAt": "2026-11-02T22:04:49.713Z",
+    "skipped": true,
+    "reason": "The topic touches upon global financial dominance, geopolitics, and currency hegemony which can lean into complex economic or political discussions outside safe everyday consumer topics, making a neutral stance difficult to maintain."
+  },
+  {
+    "title": "এআই খাতে বিনিয়োগ নিয়ে শঙ্কা, ধীর হচ্ছে এশিয়ার চিপ উৎপাদন",
+    "postedAt": "2026-11-02T22:05:45.553Z",
+    "format": "photo",
+    "category": "business",
+    "postId": "104979441905402_1181215664417891",
+    "slot": 19,
+    "headline": "এআই খাতে বিনিয়োগ শঙ্কা, এশিয়ায় কমছে চিপ উৎপাদন"
   }
 ]
