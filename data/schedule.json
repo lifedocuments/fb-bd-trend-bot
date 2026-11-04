@@ -1,8 +1,8 @@
 {
-  "date": "2026-11-04",
+  "date": "2026-11-05",
   "slots": [
-    14,
-    17,
+    9,
+    19,
     21
   ],
   "reelSlot": 21,
@@ -20,12 +20,12 @@
     },
     {
       "hour": 14,
-      "posts": 10,
-      "avgScore": 2.1
+      "posts": 11,
+      "avgScore": 1.9
     },
     {
       "hour": 17,
-      "posts": 8,
+      "posts": 9,
       "avgScore": 1.8
     },
     {
@@ -35,7 +35,7 @@
     },
     {
       "hour": 21,
-      "posts": 17,
+      "posts": 19,
       "avgScore": 2.2
     }
   ]
