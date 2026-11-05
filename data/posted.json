@@ -1115,5 +1115,20 @@
     "slot": 9,
     "headline": "হযরত ইউসুফ (আ.) ও দুর্ভিক্ষের প্রস্তুতি",
     "story": "yusuf-dream-planning"
+  },
+  {
+    "title": "স্টারলিংকের নিজস্ব মোবাইল সেবা চালুর পরিকল্পনা মাস্কের",
+    "skippedAt": "2026-11-05T20:23:00.605Z",
+    "skipped": true,
+    "reason": "could not read the AI reply (Bad control character in string literal in JSON at position 252 (line 4 column 218))"
+  },
+  {
+    "title": "ব্লুমবার্গের প্রতিবেদন • দেশে জ্বালানি সংকটে হু হু করে বাড়ছে সোলার প্যানেলের চাহিদা",
+    "postedAt": "2026-11-05T20:24:53.485Z",
+    "format": "photo",
+    "category": "business",
+    "postId": "104979441905402_1184208587451932",
+    "slot": 19,
+    "headline": "দেশে জ্বালানি সংকটে বাড়ছে সোলার প্যানেলের চাহিদা"
   }
 ]
