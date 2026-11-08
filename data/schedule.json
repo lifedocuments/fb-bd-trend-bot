@@ -1,7 +1,7 @@
 {
-  "date": "2026-11-08",
+  "date": "2026-11-09",
   "slots": [
-    12,
+    17,
     19,
     21
   ],
@@ -15,8 +15,8 @@
     },
     {
       "hour": 12,
-      "posts": 6,
-      "avgScore": 1.7
+      "posts": 7,
+      "avgScore": 1.4
     },
     {
       "hour": 14,
@@ -30,12 +30,12 @@
     },
     {
       "hour": 19,
-      "posts": 9,
+      "posts": 10,
       "avgScore": 2.1
     },
     {
       "hour": 21,
-      "posts": 22,
+      "posts": 23,
       "avgScore": 2.2
     }
   ]

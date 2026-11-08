@@ -1211,5 +1211,26 @@
     "slot": 12,
     "headline": "হযরত মুসা (আ.) ও খিজির (আ.)-এর শিক্ষণীয় ঘটনা",
     "story": "musa-khidr"
+  },
+  {
+    "title": "বিদেশি ব্যাংকগুলো বাংলাদেশ থেকে সরে যাচ্ছে কেন",
+    "skippedAt": "2026-11-08T18:08:34.891Z",
+    "skipped": true,
+    "reason": "could not read the AI reply (Unexpected token '\\', ...\"\"caption\":\\nপ্রতিবেদ\"... is not valid JSON)"
+  },
+  {
+    "title": "নতুন ফোনের বদলে আগে সক্রিয় Galaxy S26 Ultra, Dazzle-এর বিরুদ্ধে অভিযোগ",
+    "skippedAt": "2026-11-08T18:08:35.613Z",
+    "skipped": true,
+    "reason": "Consumer complaint and dispute about a specific product and company which falls under potential business disputes or negative news that should be avoided."
+  },
+  {
+    "title": "গ্যাসের ওষুধের বিকল্প ১২টি ঘরোয়া উপায়",
+    "postedAt": "2026-11-08T18:08:42.668Z",
+    "format": "photo",
+    "category": "business",
+    "postId": "104979441905402_1187354780470646",
+    "slot": 19,
+    "headline": "গ্যাসের সমস্যা দূর করার ১২টি সহজ ঘরোয়া উপায়"
   }
 ]
