@@ -1,25 +1,23 @@
 {
-  "updatedAt": "2026-11-01T20:54:32.703Z",
-  "basedOnPosts": 75,
+  "updatedAt": "2026-11-08T20:54:27.808Z",
+  "basedOnPosts": 97,
   "source": "AI",
   "tips": [
-    "Keep headlines direct and focused on practical utility for readers.",
-    "Maintain an informative and neutral tone across all posts.",
-    "Write concise sentences that quickly deliver the core message.",
-    "Use business, tech, and entertainment angles to drive higher engagement.",
-    "End posts with a simple neutral question to encourage comments."
+    "Keep headlines direct and focused on practical consumer value.",
+    "Use a professional and informative tone for business and tech updates.",
+    "Write concise captions that highlight the main news point immediately.",
+    "End posts with a neutral, open question to encourage reader comments."
   ],
   "insights": [
-    "বিজনেস, টেক এবং বিনোদন ক্যাটাগরির পোস্টগুলোতে তুলনামূলক বেশি এনগেজমেন্ট পাওয়া গেছে।",
-    "ইসলামিক ও রেসিপি ক্যাটাগরির পোস্টগুলো একেবারেই কোনো এনগেজমেন্ট পায়নি।",
-    "ফটো ফরম্যাটের পোস্টগুলো রিলের তুলনায় ভালো পারফর্ম করেছে।",
-    "তথ্যভিত্তিক ও দরকারি আপডেটগুলো পাঠকদের আকৃষ্ট করতে সফল হয়েছে।"
+    "ব্যবসা, প্রযুক্তি এবং বিনোদন বিষয়ক পোস্টগুলোতে তুলনামূলক ভালো এনগেজমেন্ট পাওয়া গেছে।",
+    "ইসলামিক এবং রেসিপি ক্যাটাগরির পোস্টগুলোতে কোনো এনগেজমেন্ট পাওয়া যায়নি।",
+    "রাত ৯টা এবং ২১টার স্লটে প্রকাশিত পোস্টগুলোর পারফরম্যান্স গড় মানের চেয়ে ভালো ছিল।"
   ],
   "weights": {
     "sports": 1.1,
-    "entertainment": 1.2,
-    "tech": 1.2,
-    "business": 1.3,
+    "entertainment": 1.1,
+    "tech": 1.1,
+    "business": 1.2,
     "islamic": 0.5,
     "news": 1
   }
