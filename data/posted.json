@@ -1503,5 +1503,11 @@
     "category": "entertainment",
     "slot": 14,
     "headline": "জেমস বন্ড কাস্টিং নিয়ে মুখ খুললেন জেফ বেজোস"
+  },
+  {
+    "title": "weather tomorrow",
+    "skippedAt": "2026-11-18T19:30:09.355Z",
+    "skipped": true,
+    "reason": "Weather updates are about the UAE, not Bangladesh, so it has no direct connection to life or interests of people in Bangladesh."
   }
 ]
