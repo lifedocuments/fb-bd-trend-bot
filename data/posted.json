@@ -1509,5 +1509,19 @@
     "skippedAt": "2026-11-18T19:30:09.355Z",
     "skipped": true,
     "reason": "Weather updates are about the UAE, not Bangladesh, so it has no direct connection to life or interests of people in Bangladesh."
+  },
+  {
+    "title": "বাংলাদেশের তৈরি পোশাক শিল্প",
+    "skippedAt": "2026-11-18T22:29:39.337Z",
+    "skipped": true,
+    "reason": "The topic involves political statements about fascism and protests in the garment sector, which touches upon sensitive political unrest and policy debates."
+  },
+  {
+    "title": "আগামী বছর ‘প্রাইম মিনিস্টার গোল্ডকাপ’ আয়োজনের ঘোষণা সরকারের",
+    "postedAt": "2026-11-18T22:29:41.407Z",
+    "format": "photo",
+    "category": "business",
+    "slot": 21,
+    "headline": "আগামী বছর হচ্ছে প্রধানমন্ত্রী গোল্ডকাপ ফুটবল টুর্নামেন্ট"
   }
 ]
