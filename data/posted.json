@@ -1477,5 +1477,31 @@
     "slot": 9,
     "headline": "হযরত যাকারিয়া (আ.)-এর দোয়া ও আল্লাহর দান",
     "story": "zakariya-prayer"
+  },
+  {
+    "title": "অন্ধকার স্থানে গাড়ি থামিয়ে অভিনেত্রীকে যা বলেছিলেন পরিচালক",
+    "skippedAt": "2026-11-18T16:59:22.164Z",
+    "skipped": true,
+    "reason": "The topic touches upon a private or scandalous incident involving an actress and a director, which violates the rule against rumours, private life scandals, or sensitive personal interactions."
+  },
+  {
+    "title": "‘বহুব্রীহি’ নাটকের মিস্ মিলি এখন কোথায়? কেমন কাটছে জীবন",
+    "skippedAt": "2026-11-18T16:59:29.874Z",
+    "skipped": true,
+    "reason": "could not read the AI reply (Unexpected token 'ন', ...\"\"caption\":নব্বইয়ের দ\"... is not valid JSON)"
+  },
+  {
+    "title": "৭৫ সিনেমায় নায়িকা নয়নতারা কত টাকার মালিক",
+    "skippedAt": "2026-11-18T17:01:20.534Z",
+    "skipped": true,
+    "reason": "The topic focuses on a celebrity's wealth and private financial worth, which falls under private life and personal matters, violating the skip criteria for celebrity gossip and personal finance inquiries."
+  },
+  {
+    "title": "জেমস বন্ড চরিত্রে প্যাটিনসনকে বেছে নেওয়ার প্রক্রিয়ায় সরাসরি যুক্ত ছিলাম: জেফ বেজোস",
+    "postedAt": "2026-11-18T17:01:51.269Z",
+    "format": "photo",
+    "category": "entertainment",
+    "slot": 14,
+    "headline": "জেমস বন্ড কাস্টিং নিয়ে মুখ খুললেন জেফ বেজোস"
   }
 ]
